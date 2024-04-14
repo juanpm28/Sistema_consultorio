@@ -5,21 +5,22 @@ fecha_actual = datetime.date.today()
 
 menu_principal = {
     'A':'Registro de pacientes',
-    'B':'Programación de citas',
-    'C':'Realización de citas programadas', 
-    'D':'Consultas y reportes',
-    'X':'Salir del sistema\n'
+    'B':'Citas', 
+    'C':'Consultas y reportes',
+    'X':'Salir del sistema'
 }
 
 ################################## DATOS PRUEBA (Comentar/descomentar de quererse así) ########################################
 
-# clave paciente : [apellido paterno, apellido materno, nombre, nacimiento]
-pacientes = {1:["Patricio", "Muñiz", "Juan", "02/06/2002"], 2:["García", "Esquivel", "José", "03/21/2000"]}
+# # clave paciente : [primer apellido, segundo apellido, nombre, nacimiento, sexo]
+pacientes = {1:["Patricio", "Muñiz", "Juan", "02/06/2002", 'H'], 2:["García", "Esquivel", "José", "03/21/2000", 'H']}
 
-# folio cita : [clave paciente, fecha cita, turno cita (1,2,3)]
-citas = {1: [1, "10/02/2024", 'Mediodía'], 2:[1, "11/02/2024", 'Tarde'], 3:[2, "11/03/2024", 'Mañana']}
 
-# folio cita: [clave paciente, hora de llegada, peso kg, estatura cm]
+
+# # folio cita : [clave paciente, fecha cita, turno cita (1,2,3)]
+citas = {1: [1, "01/02/2024", 'Mediodía'], 2:[1, "11/02/2024", 'Tarde'], 3:[2, "11/03/2024", 'Mañana']}
+
+# # folio cita: [clave paciente, hora de llegada, peso kg, estatura cm]
 citas_realizadas = {2: [1, "10:30:20", 70.0, 171.0]}
 
 ################################################################################################################################
@@ -133,9 +134,6 @@ def registro_pacientes():
         print('Opción inválida, intenta de nuevo.')
         continue
       break
-        
-        
-      
     
     # Ingreso de datos
     pacientes[clave_paciente] = [primer_apellido, segundo_apellido, nombre, _fecha_nacimiento, sexo]
@@ -272,12 +270,14 @@ def realizar_citas():
       continue
     
     # Hora de llegada del paciente
+    # import datetime
     hora_llegada = datetime.datetime.now().time()
-    hora_llegada = str(hora_llegada)[0:8]
+    # print(hora_llegada)
+    _hora_llegada = str(hora_llegada)[0:8]
 
     # Peso del paciente en kg
     while True:
-      _peso_kg = input("Ingresa el peso del paciente.\n").strip()
+      _peso_kg = input("Ingresa el peso del paciente\n").strip()
       # 1
       if not _peso_kg:
         print("\nOpción no se puede omitir. Inténtelo de nuevo.")
@@ -296,7 +296,7 @@ def realizar_citas():
     
     # Estatura del paciente en cm
     while True:
-      _estatura_cm = input("Ingresa la estatura del paciente.\n").strip()
+      _estatura_cm = input("Ingresa la estatura del paciente\n").strip()
       # 1
       if not _estatura_cm:
         print("\nOpción no se puede omitir. Inténtelo de nuevo.")
@@ -313,9 +313,9 @@ def realizar_citas():
         continue
       break
     
-    # Presion arterial
+    # Presion sistólica
     while True:
-      _sistolica = input('Ingresa la presión sistólica del paciente.\n').strip()
+      _sistolica = input('Ingresa la presión sistólica del paciente\n').strip()
       # 1
       if not _sistolica:
         print("\nOpción no se puede omitir. Inténtelo de nuevo.")
@@ -330,28 +330,45 @@ def realizar_citas():
       if sistolica <= 0:
         print('\nEl valor tiene que ser un número entero positivo. Intenta de nuevo.')
         continue
-      
-      while True:
-        _diastolica = input('Ingresa la presión diastólica del paciente.\n').strip()
-        # 1
-        if not _diastolica:
-          print("\nOpción no se puede omitir. Inténtelo de nuevo.")
-          continue
-        # 2
-        try:
-          diastolica = int(_diastolica)
-        except Exception:
-          print('\nEl valor debe ser de tipo entero. Intenta de nuevo.')
-          continue
-        # 3
-        if diastolica <= 0:
-          print('\nEl valor tiene que ser un número entero positivo. Intenta de nuevo.')
-          continue
+      # 4
+      if len(_sistolica) > 3:
+        print('\nSolo puede contener hasta 3 dígitos. Intenta de nuevo.')
+        continue
+      # 5
+      _sistolica = _sistolica.rjust(3, '0')
         
-        presion_arterial = f'{_sistolica}/{_diastolica}'
-        
-        break
       break
+    
+    # Presión diastólica
+    while True:
+      _diastolica = input('Ingresa la presión diastólica del paciente\n').strip()
+      # 1
+      if not _diastolica:
+        print("\nOpción no se puede omitir. Inténtelo de nuevo.")
+        continue
+      # 2
+      try:
+        diastolica = int(_diastolica)
+      except Exception:
+        print('\nEl valor debe ser de tipo entero. Intenta de nuevo.')
+        continue
+      # 3
+      if diastolica <= 0:
+        print('\nEl valor tiene que ser un número entero positivo. Intenta de nuevo.')
+        continue
+      # 4
+      if len(_diastolica) > 3:
+        print('\nSolo puede contener hasta 3 dígitos. Intenta de nuevo.')
+        continue
+      # 5
+      while len(_diastolica) < 3:
+        _diastolica = '0' + _diastolica
+        
+      break
+      
+    # Presión arterial
+    presion_arterial = f'{_sistolica}/{_diastolica}'
+    print(presion_arterial)
       
     # Diagnóstico (200 caracteres max)
     while True:
@@ -362,8 +379,21 @@ def realizar_citas():
         continue
       break
     
+    # Edad
+    clave_paciente = citas[folio_cita][0]
+    _fecha_nacimiento = pacientes[clave_paciente][3]
+    fecha_nacimiento = datetime.datetime.strptime(_fecha_nacimiento, '%m/%d/%Y').date()
+    
+    _fecha_cita = citas[folio_cita][1]
+    fecha_cita = datetime.datetime.strptime(_fecha_cita, '%m/%d/%Y').date()
+    
+    edad = fecha_cita.year - fecha_nacimiento.year
+    
+    if (fecha_nacimiento.month, fecha_nacimiento.day) > (fecha_cita.month, fecha_cita.day):
+      edad = edad - 1
+    
     # Ingreso del registro
-    citas_realizadas[folio_cita] = [list(citas.values())[0], hora_llegada, peso_kg, estatura_cm, presion_arterial, diagnostico]
+    citas_realizadas[folio_cita] = [list(citas.values())[0], _hora_llegada, peso_kg, estatura_cm, presion_arterial, diagnostico, str(edad)]
     
     print(f'La cita {folio_cita} se ha realizado correctamente.')
 
@@ -389,8 +419,17 @@ def consultas_reportes():
                                         'X':'Volver al menú anterior'})
     # REPORTE DE CITAS
     if op_citas_pacientes == 'A':
+      # 1
+      if not citas:
+        print('\nNo existen citas registradas en el sistema.')
+        continue
       menu_periodo_paciente()
     if op_citas_pacientes == 'B':
+      # 1
+      if not pacientes:
+        print('\nNo hay pacientes registrados en el sistema.')
+        continue
+      
       menu_listado_busqueda_clave_apellidos()
     # SALIDA
     if op_citas_pacientes == 'X':
@@ -440,31 +479,40 @@ def menu_periodo_paciente():
           continue
         
         cita_encontrada = False
-        print('\n************************************************************************************************************')
-        print(f'Reporte de citas entre {_fecha_inicial} y {_fecha_final}')
-        print('\n************************************************************************************************************')
-        print('Clave_paciente  1er_Apellido  2do_Apellido          Nombre         Fecha_nacimiento   Folio_cita    Fecha_cita     Turno     Hora_llegada   Peso_kg   Estatura_cm')
+        impresion_unica = True
 
         for i in range(1, len(citas) + 1):   # i = folio_cita
           # Extracción de datos de citas
           clave_paciente_citas, _fecha_cita, turno_cita = citas[i]
-          # turno_cita = list(turno_cita.values())[0]  # Para acceder solo al valor (Mañana)
           # Extracción datos de pacientes
-          primer_apellido, segundo_apellido, nombre, fecha_nacimiento = pacientes[clave_paciente_citas]
+          primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo = pacientes[clave_paciente_citas]
           # Conversión
           fecha_cita = datetime.datetime.strptime(_fecha_cita, '%m/%d/%Y').date()  # [2, "11/02/2024", 1]
           # Comprueba si existe primero en citas realizadas
-          if i in citas_realizadas:     
+          if i in citas_realizadas:
+              
             # Extracción datos de citas realizadas
             clave_paciente_realizadas, hora_llegada, peso_kg, estatura_cm = citas_realizadas[i]
             # Acceder a datos del paciente
-            if fecha_inicial <= fecha_cita <= fecha_final:
-              print(f'{clave_paciente_citas:^14} {primer_apellido:^14} {segundo_apellido:^14} {nombre:^20} {fecha_nacimiento:^16} {i:^15} {_fecha_cita:^13} {turno_cita:^10} {hora_llegada:^14} {peso_kg:^9} {estatura_cm:^12}')
+            if fecha_inicial <= fecha_cita <= fecha_final:  
+              if impresion_unica:
+                print('\n************************************************************************************************************')
+                print(f'Reporte de citas entre {_fecha_inicial} y {_fecha_final}')
+                print('\n************************************************************************************************************')
+                print('Clave_paciente  1er_Apellido  2do_Apellido          Nombre         Fecha_nacimiento   Sexo     Folio_cita    Fecha_cita     Turno     Hora_llegada   Peso_kg   Estatura_cm')
+                impresion_unica = False              
+              print(f'{clave_paciente_citas:^14} {primer_apellido:^14} {segundo_apellido:^14} {nombre:^20} {fecha_nacimiento:^16}  {sexo:^7}  {i:^15} {_fecha_cita:^13} {turno_cita:^10} {hora_llegada:^14} {peso_kg:^9} {estatura_cm:^12}')
               cita_encontrada = True
               continue
             
           if fecha_inicial <= fecha_cita <= fecha_final: # si existe en citas
-            print(f'{clave_paciente_citas:^14} {primer_apellido:^14} {segundo_apellido:^14} {nombre:^20} {fecha_nacimiento:^16} {i:^15} {_fecha_cita:^13} {turno_cita:^10} {"-":^14} {"-":^9} {"-":^12}')
+            if impresion_unica:
+              print('\n************************************************************************************************************')
+              print(f'Reporte de citas entre {_fecha_inicial} y {_fecha_final}')
+              print('\n************************************************************************************************************')
+              print('Clave_paciente  1er_Apellido  2do_Apellido          Nombre         Fecha_nacimiento   Sexo     Folio_cita    Fecha_cita     Turno     Hora_llegada   Peso_kg   Estatura_cm')
+              impresion_unica = False
+            print(f'{clave_paciente_citas:^14} {primer_apellido:^14} {segundo_apellido:^14} {nombre:^20} {fecha_nacimiento:^16}  {sexo:^7}  {i:^15} {_fecha_cita:^13} {turno_cita:^10} {"-":^14} {"-":^9} {"-":^12}')
             cita_encontrada = True
             
         if not cita_encontrada:
@@ -494,10 +542,10 @@ def menu_periodo_paciente():
           print('\nEl paciente no está registrado.')
           continue
         
-        primer_apellido, segundo_apellido, nombre, fecha_nacimiento = pacientes[clave_paciente]
+        primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo = pacientes[clave_paciente]
         print('\n**********************************************************************************')
-        print('Clave_paciente  1er_Apellido  2do_Apellido          Nombre         Fecha_nacimiento')
-        print(f'{clave_paciente:^14} {primer_apellido:^14} {segundo_apellido:^14} {nombre:^20} {fecha_nacimiento:^16}') 
+        print('Clave_paciente  1er_Apellido  2do_Apellido          Nombre         Fecha_nacimiento   Sexo')
+        print(f'{clave_paciente:^14} {primer_apellido:^14} {segundo_apellido:^14} {nombre:^20} {fecha_nacimiento:^16}  {sexo:^7}') 
         print('\n**********************************************************************************')
         
         # Impresion de citas posibles (Vas revisando cita por cita, y si se encuentra con la cita en cita realizada, imprime solo ese registro)
@@ -510,11 +558,11 @@ def menu_periodo_paciente():
           if i in citas_realizadas:
             clave_paciente_realizadas, hora_llegada, peso_kg, estatura_cm = citas_realizadas[i]
             if clave_paciente == clave_paciente_realizadas: # si existe en realizadas
-              print(f'{i:^11} {fecha_cita:^12} {turno_cita:^10} {hora_llegada:^14} {peso_kg:^9} {estatura_cm:^12}')
+              print(f'{i:^11} {fecha_cita:^12} {turno_cita:^11} {hora_llegada:^14} {peso_kg:^9} {estatura_cm:^12}')
               continue
             
           if clave_paciente == clave_paciente_citas: # si existe en citas
-            print(f'{i:^11} {fecha_cita:^12} {turno_cita:^10} {"-":^14} {"-":^9} {"-":^12}')
+            print(f'{i:^11} {fecha_cita:^12} {turno_cita:^11} {"-":^14} {"-":^9} {"-":^12}')
         break
       
     # VOLVER AL MENÚ ANTERIOR
@@ -531,12 +579,17 @@ def menu_listado_busqueda_clave_apellidos():
           
     # LISTADO COMPLETO DE PACIENTES
     if op_listado_busqueda == 'A':
+      # 1
+      if not pacientes:
+        print('\nNo hay pacientes registrados en el sistema.')
+        continue
+      
       print('\n**********************************************************************************')
       print(f'Información de los pacientes registrados')
-      print('Clave_paciente  1er_Apellido  2do_Apellido          Nombre         Fecha_nacimiento')
+      print('Clave_paciente  1er_Apellido  2do_Apellido          Nombre         Fecha_nacimiento   Sexo')
       for clave_paciente, datos in pacientes.items():
-          primer_apellido, segundo_apellido, nombre, fecha_nacimiento = datos
-          print(f'{clave_paciente:^14} {primer_apellido:^14} {segundo_apellido:^14} {nombre:^20} {fecha_nacimiento:^16}') 
+          primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo = datos
+          print(f'{clave_paciente:^14} {primer_apellido:^14} {segundo_apellido:^14} {nombre:^20} {fecha_nacimiento:^16}  {sexo:^7}') 
       print('**********************************************************************************')
 
     # BÚSQUEDA POR CLAVE DE PACIENTE
@@ -560,9 +613,9 @@ def menu_listado_busqueda_clave_apellidos():
         
         print('\n**********************************************************************************')
         print(f'Información del paciente')
-        primer_apellido, segundo_apellido, nombre, fecha_nacimiento = pacientes[clave_paciente]
-        print('Clave_paciente  1er_Apellido  2do_Apellido          Nombre         Fecha_nacimiento')
-        print(f'{clave_paciente:^14} {primer_apellido:^14} {segundo_apellido:^14} {nombre:^20} {fecha_nacimiento:^16}') 
+        primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo = pacientes[clave_paciente]
+        print('Clave_paciente  1er_Apellido  2do_Apellido          Nombre         Fecha_nacimiento   Sexo')
+        print(f'{clave_paciente:^14} {primer_apellido:^14} {segundo_apellido:^14} {nombre:^20} {fecha_nacimiento:^16}  {sexo:^7}') 
         print('**********************************************************************************')
         break
       
@@ -606,12 +659,12 @@ def menu_listado_busqueda_clave_apellidos():
           break
         
         for clave_paciente, datos in pacientes.items():
-            primer_apellido, segundo_apellido, nombre, fecha_nacimiento = datos
+            primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo = datos
             if primer_apellido_u == primer_apellido and segundo_apellido_u == segundo_apellido and nombre_u == nombre:
               print('\n**********************************************************************************')
               print(f'Información del paciente')
-              print('Clave_paciente  1er_Apellido  2do_Apellido          Nombre         Fecha_nacimiento')
-              print(f'{clave_paciente:^14} {primer_apellido:^14} {segundo_apellido:^14} {nombre:^20} {fecha_nacimiento:^16}') 
+              print('Clave_paciente  1er_Apellido  2do_Apellido          Nombre         Fecha_nacimiento   Sexo')
+              print(f'{clave_paciente:^14} {primer_apellido:^14} {segundo_apellido:^14} {nombre:^20} {fecha_nacimiento:^16}  {sexo:^7}') 
               print('**********************************************************************************')
               break
         else:
@@ -629,10 +682,8 @@ while True:
     case 'A':
       registro_pacientes()
     case 'B':
-      crear_cita()
+      citas_crear_realizar_cancelar()
     case 'C':
-      realizar_citas()
-    case 'D':
       consultas_reportes()
     case 'X':
       op_salida = elegir_opcion('¿En verdad deseas salir del sistema? S/N\n', 'SN')
