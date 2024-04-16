@@ -2,7 +2,6 @@ import datetime
 import re
 import csv
 import sys
-# import threading
 
 fecha_actual = datetime.date.today()
 
@@ -13,29 +12,6 @@ menu_principal = {
     'X':'Salir del sistema'
 }
 
-################################## DATOS PRUEBA (Comentar/descomentar de quererse así) ########################################
-
-# # clave paciente : [primer apellido, segundo apellido, nombre, nacimiento, sexo]
-# pacientes = { 1: ["Patricio", "Muñiz", "Juan", "02/06/2002", 'H'], 
-#               2: ["García", "Esquivel", "José", "03/21/2000", 'H']
-#               }
-
-# # folio cita : [clave paciente, fecha cita, turno cita (1,2,3)]
-# citas = { 1: [1, "01/02/2024", 'Mediodía'], 
-#           2: [1, "11/02/2024", 'Tarde'], 
-#           3: [2, "11/03/2024", 'Mañana']
-#           }
-
-# # folio cita: [clave paciente, hora de llegada, peso kg, estatura cm, presion_arterial, diagnostico, str(edad)]
-# citas_realizadas = {2: [1, "10:30:20", 70.0, 171.0, '150/200', 'Diágnostico de prueba 1. Queda algo largo ekis lolololo. Pero bueno, cómo estás, lorem ipsum.', '22'], 
-#                     3: [1, "10:30:20", 70.0, 171.0, '150/200', 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation', '22']
-#                     }
-
-################################################################################################################################
-
-# pacientes = {}
-# citas = {}
-# citas_realizadas = {}
 
 def elegir_opcion(prompt='Elige la opción deseada',
                   opciones='ABCD'):
@@ -72,21 +48,21 @@ def registro_pacientes():
     clave_paciente = len(pacientes) + 1
     
     # Primer apellido
-    primer_apellido = input('Ingresa el primer apellido. [X]: Cancelar operación\n').title().strip()
-    if primer_apellido == 'X':
+    primer_apellido = input('Ingresa el primer apellido\n').title().strip()
+    if primer_apellido == '*':
       break
     # 1
     if not primer_apellido: # si es que está vacío
-      print("\nOpción no se puede omitir. Inténtelo de nuevo.")
+      print("\nOpción no se puede omitir. Inténtelo de nuevo. [*]: Cancelar operación")
       continue
     # 2
     if not primer_apellido.replace(' ', '').isalpha(): # comprueba que todo sea texto
-      print('\nError. Solo se aceptan caracteres alfabéticos. Intente de nuevo.')
+      print('\nError. Solo se aceptan caracteres alfabéticos. Intente de nuevo. [*]: Cancelar operación')
       continue
     
     while True:
       # Segundo apellido
-      segundo_apellido = input('Ingresa el segundo apellido. [*]: Cancelar operación\n').title().strip()
+      segundo_apellido = input('Ingresa el segundo apellido\n').title().strip()
       if segundo_apellido == '*':
         flag_salir = True
         break
@@ -95,7 +71,7 @@ def registro_pacientes():
         break
       # 2
       if not segundo_apellido.replace(' ', '').isalpha():
-        print('\nError. Solo se aceptan caracteres alfabéticos. Intente de nuevo.')
+        print('\nError. Solo se aceptan caracteres alfabéticos. Intente de nuevo. [*]: Cancelar operación')
         continue
       break
     if flag_salir:
@@ -103,17 +79,17 @@ def registro_pacientes():
       
     while True:
       # Nombre
-      nombre = input('Ingresa el nombre. [*]: Cancelar operación\n').title().strip()
+      nombre = input('Ingresa el nombre\n').title().strip()
       if nombre == '*':
         flag_salir = True
         break
       # 1
       if not nombre:
-        print("\nOpción no se puede omitir. Inténtelo de nuevo.")
+        print("\nOpción no se puede omitir. Inténtelo de nuevo. [*]: Cancelar operación")
         continue
       # 2
       if not nombre.replace(' ', '').isalpha():
-        print('\nError. Solo se aceptan caracteres alfabéticos. Intente de nuevo.')
+        print('\nError. Solo se aceptan caracteres alfabéticos. Intente de nuevo. [*]: Cancelar operación')
         continue
       break
     if flag_salir:
@@ -121,23 +97,23 @@ def registro_pacientes():
     
     while True:
       # Fecha de nacimiento
-      _fecha_nacimiento = input('Ingresa la fecha de nacimiento (mm/dd/aaaa). [*]: Cancelar operación\n').strip()
+      _fecha_nacimiento = input('Ingresa la fecha de nacimiento (mm/dd/aaaa)\n').strip()
       if _fecha_nacimiento == '*':
         flag_salir = True
         break
       #1
       if not _fecha_nacimiento:
-        print("\nOpción no se puede omitir. Inténtelo de nuevo.")
+        print("\nOpción no se puede omitir. Inténtelo de nuevo. [*]: Cancelar operación")
         continue
       # 2
       try:
         fecha_nacimiento = datetime.datetime.strptime(_fecha_nacimiento, '%m/%d/%Y').date()
       except Exception:
-        print('\nFecha inválida. Intenta de nuevo.')
+        print('\nFecha inválida. Intenta de nuevo. [*]: Cancelar operación')
         continue
       # 3
       if fecha_nacimiento >= fecha_actual:
-        print('\nLa fecha de nacimiento no puede ser superior o igual a la fecha actual.')
+        print('\nLa fecha de nacimiento no puede ser superior o igual a la fecha actual. [*]: Cancelar operación')
         continue
       break
     if flag_salir:
@@ -145,7 +121,7 @@ def registro_pacientes():
     
     while True:
       # Sexo
-      sexo = input('Ingresa el sexo \n[H] Hombre \n[M] Mujer \n[*] Cancelar operación\n').upper()
+      sexo = input('Ingresa el sexo \n[H] Hombre \n[M] Mujer\n').upper().strip()
       if sexo == '*':
         flag_salir = True
         break
@@ -159,7 +135,7 @@ def registro_pacientes():
           break
       # 2
       if sexo not in ['H', 'M']:
-        print('\nOpción inválida. Intenta de nuevo.')
+        print('\nOpción inválida. Intenta de nuevo. [*]: Cancelar operación')
         continue
       break
     if flag_salir:
@@ -183,8 +159,14 @@ def citas_crear_realizar_cancelar():
     if op_citas_crear_realizar_cancelar == 'A':
       crear_cita()
     if op_citas_crear_realizar_cancelar == 'B':
+      if not citas:
+        print('\nDebe haber al menos una cita creada para poder realizarla.')
+        continue
       realizar_citas()
     if op_citas_crear_realizar_cancelar == 'C':
+      if not citas:
+        print('\nDebe haber al menos una cita creada para poder cancelarla.')
+        continue
       cancelar_cita()
     # SALIDA
     if op_citas_crear_realizar_cancelar == 'X':
@@ -199,48 +181,48 @@ def crear_cita():
     folio_cita = len(citas) + 1
     
     # Clave del paciente
-    _clave_paciente = input('Ingresa la clave del paciente [*]: Cancelar operación\n').strip()
+    _clave_paciente = input('Ingresa la clave del paciente\n').strip()
     if _clave_paciente.upper() == '*':
       break
     # 1
     if not _clave_paciente:  
-      print("\nOpción no se puede omitir. Inténtelo de nuevo.")
+      print("\nOpción no se puede omitir. Inténtelo de nuevo. [*]: Cancelar operación")
       continue
     # 2
     try:
       clave_paciente = int(_clave_paciente)
     except Exception:
-      print("\nLa clave solo puede contener datos numéricos enteros. Intenta de nuevo.")
+      print("\nLa clave solo puede contener datos numéricos enteros. Intenta de nuevo. [*]: Cancelar operación")
       continue
     # 3
     if clave_paciente not in pacientes:
-      print('\nError. El paciente no está registrado en el sistema.')
+      print('\nError. El paciente no está registrado en el sistema. [*]: Cancelar operación')
       continue
     
     while True:  
       # Fecha de la cita
-      _fecha_cita = input('Ingresa la fecha de la cita (mm/dd/yyyy) [*]: Cancelar operación\n').strip()
+      _fecha_cita = input('Ingresa la fecha de la cita (mm/dd/yyyy)\n').strip()
       if _fecha_cita.upper() == '*':
         flag_salir = True
         break
       # 1
       if not _fecha_cita:
-        print("\nOpción no se puede omitir. Inténtelo de nuevo.")
+        print("\nOpción no se puede omitir. Inténtelo de nuevo. [*]: Cancelar operación")
         continue
       # 2
       try:
         fecha_cita = datetime.datetime.strptime(_fecha_cita, '%m/%d/%Y').date()
       except Exception:
-        print('\nFecha inválida. Intenta de nuevo.')
+        print('\nFecha inválida. Intenta de nuevo. [*]: Cancelar operación')
         continue
       # 3
       if fecha_cita < fecha_actual:
-        print('\nLa fecha ingresada debe ser posterior a la fecha actual.')
+        print('\nLa fecha ingresada debe ser posterior a la fecha actual. [*]: Cancelar operación')
         continue
       # 4
       fecha_actual_mas_60 = fecha_actual + datetime.timedelta(days=60)
       if fecha_cita > fecha_actual_mas_60:
-        print('\nLa fecha ingresada no debe ser mayor o igual a 60 días posteriores a la fecha actual.')
+        print('\nLa fecha ingresada no debe ser mayor o igual a 60 días posteriores a la fecha actual. [*]: Cancelar operación')
         fecha_distante = datetime.datetime.strftime(fecha_actual_mas_60, '%m/%d/%Y')
         print(f'Fecha más distante para agendar una cita: {fecha_distante}')
         continue
@@ -253,21 +235,43 @@ def crear_cita():
           print(f'La cita ha sido agendada para el sábado {_fecha_cita}\n')
           break
         elif op_reagendar == 'N':
-          print('\nDebes agendar la cita en otra fecha.')
+          print('\nDebes agendar la cita en otra fecha. [*]: Cancelar operación')
           continue    
       break
-    
     if flag_salir:
       break
     
-    # Turno de la cita
-    menu_turno_cita = {'1':'Mañana', '2':'Mediodía', '3':'Tarde', '*':'Cancelar operación'}
-    turno_cita = mostrar_menu(menu_turno_cita, '\nTurno de la cita')
-    if turno_cita == '*':
+    while True:
+      # Turno de la cita
+      menu_turno_cita = {'1':'Mañana', '2':'Mediodía', '3':'Tarde'}
+      [print(f'[{k}] {v}') for k, v in menu_turno_cita.items()]
+      _turno_cita = input('Ingresa el turno de la cita\n').strip()
+      if _turno_cita == '*':
+        flag_salir = True
         break
+      # 1
+      if not _turno_cita:
+        print("\nOpción no se puede omitir. Inténtelo de nuevo. [*]: Cancelar operación")
+        continue
+      # 2
+      try:
+        turno_cita = int(_turno_cita)
+      except Exception:
+        print("\nEl turno solo puede contener datos numéricos enteros. Intenta de nuevo. [*]: Cancelar operación")
+        continue
+
+      if turno_cita == 1:
+        _turno_cita = 'Mañana'
+      elif turno_cita == 2:
+        _turno_cita = 'Mediodía'
+      elif turno_cita == 3:
+        _turno_cita = 'Tarde'
+      break
+    if flag_salir:
+      break
     
     # Ingreso de datos
-    citas[folio_cita] = [clave_paciente, _fecha_cita, menu_turno_cita[turno_cita]]
+    citas[folio_cita] = [clave_paciente, _fecha_cita, _turno_cita]
     
     # print(citas[folio_cita])
     
@@ -280,26 +284,26 @@ def realizar_citas():
   flag_salir = False # Controla si salimos o no del while exterior
   while True:
     # Folio de la cita
-    _folio_cita = input('Ingresa el folio de la cita (Número entero) [*]: Cancelar operación\n').strip()
+    _folio_cita = input('Ingresa el folio de la cita (Número entero)\n').strip()
     if _folio_cita.upper() == '*':
       break
     # 1
     if not _folio_cita: # Si está vacío
-      print('\nOpción no se puede omitir. Inténtelo de nuevo.')
+      print('\nOpción no se puede omitir. Inténtelo de nuevo. [*]: Cancelar operación')
       continue
     # 2
     try:
       folio_cita = int(_folio_cita)
     except Exception:
-      print('\nEl folio solo puede contener datos numéricos enteros. Intenta de nuevo.')
+      print('\nEl folio solo puede contener datos numéricos enteros. Intenta de nuevo. [*]: Cancelar operación')
       continue
     # 3
     if folio_cita not in citas:
-      print('\nLa cita no ha sido registrada con anterioridad.')
+      print('\nLa cita no ha sido registrada con anterioridad. [*]: Cancelar operación')
       continue
     #4
     if folio_cita in citas_realizadas:
-      print('\nLa cita programada ya ha sido realizada.')
+      print('\nLa cita programada ya ha sido realizada. [*]: Cancelar operación')
       continue
     
     # Hora de llegada del paciente
@@ -308,23 +312,23 @@ def realizar_citas():
 
     # Peso del paciente en kg
     while True:
-      _peso_kg = input("Ingresa el peso del paciente [*]: Cancelar operación\n").strip()
+      _peso_kg = input("Ingresa el peso del paciente\n").strip()
       if _peso_kg.upper() == '*':
         flag_salir = True
         break
       # 1
       if not _peso_kg:
-        print("\nOpción no se puede omitir. Inténtelo de nuevo.")
+        print("\nOpción no se puede omitir. Inténtelo de nuevo [*]: Cancelar operación")
         continue
       # 2
       try:
         peso_kg = float(_peso_kg)
       except Exception:
-        print('\nEl peso debe ser de dato numérico. Intenta de nuevo.')
+        print('\nEl peso debe ser de dato numérico. Intenta de nuevo [*]: Cancelar operación')
         continue
       # 3
       if peso_kg <= 0:
-        print("\nEl peso no puede ser menor o igual a 0. Inténtelo de nuevo.")
+        print("\nEl peso no puede ser menor o igual a 0. Inténtelo de nuevo [*]: Cancelar operación")
         continue
       break
     if flag_salir:
@@ -332,23 +336,23 @@ def realizar_citas():
     
     # Estatura del paciente en cm
     while True:
-      _estatura_cm = input("Ingresa la estatura del paciente [*]: Cancelar operación\n").strip()
+      _estatura_cm = input("Ingresa la estatura del paciente\n").strip()
       if _estatura_cm.upper() == '*':
         flag_salir = True
         break
       # 1
       if not _estatura_cm:
-        print("\nOpción no se puede omitir. Inténtelo de nuevo.")
+        print("\nOpción no se puede omitir. Inténtelo de nuevo. [*]: Cancelar operación")
         continue
       # 2
       try:
         estatura_cm = float(_estatura_cm)
       except Exception:
-        print('\nLa estatura debe ser de dato numérico. Intenta de nuevo.')
+        print('\nLa estatura debe ser de dato numérico. Intenta de nuevo. [*]: Cancelar operación')
         continue
       # 3
       if estatura_cm <= 0:
-        print("\nLa estatura no puede ser menor o igual a 0. Inténtelo de nuevo.")
+        print("\nLa estatura no puede ser menor o igual a 0. Inténtelo de nuevo. [*]: Cancelar operación")
         continue
       break
     if flag_salir:
@@ -356,27 +360,27 @@ def realizar_citas():
     
     # Presion sistólica
     while True:
-      _sistolica = input('Ingresa la presión sistólica del paciente [*]: Cancelar operación\n').strip()
+      _sistolica = input('Ingresa la presión sistólica del paciente\n').strip()
       if _sistolica.upper() == '*':
         flag_salir = True
         break
       # 1
       if not _sistolica:
-        print("\nOpción no se puede omitir. Inténtelo de nuevo.")
+        print("\nOpción no se puede omitir. Inténtelo de nuevo. [*]: Cancelar operación")
         continue
       # 2
       try:
         sistolica = int(_sistolica)
       except Exception:
-        print('\nEl valor debe ser de tipo entero. Intenta de nuevo.')
+        print('\nEl valor debe ser de tipo entero. Intenta de nuevo. [*]: Cancelar operación')
         continue
       # 3
       if sistolica <= 0:
-        print('\nEl valor tiene que ser un número entero positivo. Intenta de nuevo.')
+        print('\nEl valor tiene que ser un número entero positivo. Intenta de nuevo. [*]: Cancelar operación')
         continue
       # 4
       if len(_sistolica) > 3:
-        print('\nSolo puede contener hasta 3 dígitos. Intenta de nuevo.')
+        print('\nSolo puede contener hasta 3 dígitos. Intenta de nuevo. [*]: Cancelar operación')
         continue
       # 5 Agrega ceros a la izquierda
       _sistolica = _sistolica.rjust(3, '0')
@@ -386,27 +390,27 @@ def realizar_citas():
     
     # Presión diastólica
     while True:
-      _diastolica = input('Ingresa la presión diastólica del paciente [*]: Cancelar operación\n').strip()
+      _diastolica = input('Ingresa la presión diastólica del paciente\n').strip()
       if _diastolica.upper() == '*':
         flag_salir = True
         break
       # 1
       if not _diastolica:
-        print("\nOpción no se puede omitir. Inténtelo de nuevo.")
+        print("\nOpción no se puede omitir. Inténtelo de nuevo. [*]: Cancelar operación")
         continue
       # 2
       try:
         diastolica = int(_diastolica)
       except Exception:
-        print('\nEl valor debe ser de tipo entero. Intenta de nuevo.')
+        print('\nEl valor debe ser de tipo entero. Intenta de nuevo. [*]: Cancelar operación')
         continue
       # 3
       if diastolica <= 0:
-        print('\nEl valor tiene que ser un número entero positivo. Intenta de nuevo.')
+        print('\nEl valor tiene que ser un número entero positivo. Intenta de nuevo. [*]: Cancelar operación')
         continue
       # 4
       if len(_diastolica) > 3:
-        print('\nSolo puede contener hasta 3 dígitos. Intenta de nuevo.')
+        print('\nSolo puede contener hasta 3 dígitos. Intenta de nuevo. [*]: Cancelar operación')
         continue
       # 5 Agrega ceros a la izquierda para cumplir los 3 digitos
       while len(_diastolica) < 3:
@@ -421,13 +425,13 @@ def realizar_citas():
       
     # Diagnóstico (200 caracteres max)
     while True:
-      diagnostico = input('Diagnóstico (200 caracteres máximo) [*]: Cancelar operación\n').upper()
+      diagnostico = input('Diagnóstico (200 caracteres máximo)\n').upper()
       if diagnostico.upper() == '*':
         flag_salir = True
         break
       # 1
       if len(diagnostico) > 200:
-        print('\nEl diagnóstico excedió los 200 caracteres. Intenta de nuevo.')
+        print('\nEl diagnóstico excedió los 200 caracteres. Intenta de nuevo. [*]: Cancelar operación')
         continue
       break
     
@@ -461,60 +465,72 @@ def cancelar_cita():
     # BÚSQUEDA POR FECHA
     if op_cancelar_fecha_paciente == 'A':
       eliminar_por_fecha()
+    # BÚSQUEDA POR PACIENTE
     elif op_cancelar_fecha_paciente == 'B':
-      eliminar_pacientes_con_citas_pendientes()
+      cancelacion_por_paciente()
     elif op_cancelar_fecha_paciente == 'X':
       break
     
+# BÚSQUEDA POR FECHA
 def eliminar_por_fecha():
     while True:
-        fecha_a_buscar = input('Ingresa la fecha a buscar mm/dd/yyyy/. [X]: Volver al menú anterior\n').strip()
-        if fecha_a_buscar.upper() == "X":
+        fecha_a_buscar = input('Ingresa la fecha a buscar (mm/dd/yyyy/)\n').strip()
+        if fecha_a_buscar.upper() == "*":
             break
+        # 1
         if not fecha_a_buscar:
-            print("Opción no se puede omitir. Inténtelo de nuevo.")
+            print("Opción no se puede omitir. Inténtelo de nuevo. [*]: Cancelar operación")
             continue
+        # 2
         if not citas:
-            print("No existen citas registradas todavía.")
+            print("No existen citas registradas todavía. [*]: Cancelar operación")
             continue
+        # 3
         try:
             fecha_a_buscar = datetime.datetime.strptime(fecha_a_buscar, "%m/%d/%Y").date()
         except Exception:
-            print('\nFecha inválida. Intenta de nuevo.')
+            print('\nFecha inválida. Intenta de nuevo. [*]: Cancelar operación')
             continue
         
         citas_en_fecha = []
         for id_cita, datos_cita in citas.items():
             fecha_cita = datetime.datetime.strptime(datos_cita[1], '%m/%d/%Y').date()
             if fecha_cita == fecha_a_buscar:
-                if id_cita in citas_realizadas:  # Verificar si la cita ya ha sido realizada
+                if id_cita in citas_realizadas:
                     continue
-                folio_paciente = datos_cita[0]
                 turno = datos_cita[2]
+                folio_paciente = datos_cita[0]
                 nombre_paciente = pacientes[folio_paciente][2]
                 apellido_paterno = pacientes[folio_paciente][0]
                 apellido_materno = pacientes[folio_paciente][1]
-                citas_en_fecha.append((id_cita, nombre_paciente, apellido_paterno, apellido_materno, turno))
+                nombre_completo = f"{nombre_paciente} {apellido_paterno} {apellido_materno}"
+                citas_en_fecha.append((id_cita, nombre_completo, turno, folio_paciente))
 
         if not citas_en_fecha:
             print("No hay citas programadas para la fecha ingresada o todas las citas ya han sido realizadas.")
             continue
 
         print("Citas encontradas para la fecha", fecha_a_buscar.strftime('%m/%d/%Y') + ":")
-        for id_cita, nombre_paciente, apellido_paterno, apellido_materno, turno in citas_en_fecha:
-            print(f"ID Cita: {id_cita}, Nombre del Paciente: {nombre_paciente} {apellido_paterno} {apellido_materno}, Turno: {turno}")
+        print("{:<30} {:<10}".format("Nombre del Paciente", "Turno"))
+        for id_cita, nombre_completo, turno, folio_paciente in citas_en_fecha:
+            print("{:<30} {:<10}".format(nombre_completo, turno))
 
-        id_a_eliminar = input("Ingrese el ID de la cita que desea eliminar o presione Enter para salir: ")
-        if id_a_eliminar.isdigit() and int(id_a_eliminar) in [id_cita for id_cita, _, _, _, _ in citas_en_fecha]:
-            if int(id_a_eliminar) in citas_realizadas:
-                print("Esta cita ya ha sido realizada y no se puede eliminar.")
+        folio_a_eliminar = input("Ingrese el folio del paciente para eliminar la cita o presione Enter para salir: ")
+        if folio_a_eliminar.isdigit():
+            folio_a_eliminar = int(folio_a_eliminar)
+            if folio_a_eliminar in [folio_paciente for _, _, _, folio_paciente in citas_en_fecha]:
+                for id_cita, _, _, folio_paciente_cita in citas_en_fecha:
+                    if folio_paciente_cita == folio_a_eliminar:
+                        del citas[id_cita]
+                        print(f"Se ha eliminado la cita del paciente con folio {folio_a_eliminar}.")
+                        break
             else:
-                del citas[int(id_a_eliminar)]
-                print(f"Se ha eliminado la cita con ID {id_a_eliminar}.")
+                print("El folio a eliminar no existe en la lista de citas.")
         else:
-            print("No se eliminó ninguna cita.")
+            print("El folio ingresado no es válido.")
 
-def eliminar_pacientes_con_citas_pendientes():
+# BÚSQUEDA POR PACIENTE
+def cancelacion_por_paciente():
     while True:
         pacientes_con_citas_pendientes = []
 
@@ -531,45 +547,56 @@ def eliminar_pacientes_con_citas_pendientes():
         # Mostrar la lista de pacientes con citas pendientes
         if pacientes_con_citas_pendientes:
             print("Pacientes con citas pendientes:")
+            print("{:<10} {:<20} {:<20} {:<20}".format("Folio", "Nombre del Paciente", "Apellido Paterno", "Apellido Materno"))
             for folio, datos_paciente in pacientes_con_citas_pendientes:
                 nombre = datos_paciente[2]
                 apellido_paterno = datos_paciente[0]
                 apellido_materno = datos_paciente[1]
-                print(f"Folio: {folio}, Nombre: {nombre}, Apellido Paterno: {apellido_paterno}, Apellido Materno: {apellido_materno}")
+                print("{:<10} {:<20} {:<20} {:<20}".format(folio, nombre, apellido_paterno, apellido_materno))
         else:
             print("No hay pacientes con citas pendientes.")
+            return  # Salir si no hay pacientes con citas pendientes
 
         # Capturar el folio del paciente seleccionado por el usuario
-        opcion = input("Ingrese el folio del paciente para eliminarlo o presione 'X' para salir al menú anterior: ").strip().upper()
-        
-        if opcion == "X":
+        opcion = input("Ingrese el folio del paciente para eliminarlo\n").strip().upper()
+        if opcion == "*":
             print("Regresando al menú anterior...")
             break
+        # 1
         elif not opcion:
-            print("No ha ingresado ningún folio.")
+            print("No ha ingresado ningún folio. [*]: Cancelar operación")
             continue
-
+        # 2
         try:
             folio_seleccionado = int(opcion)
         except ValueError:
-            print("Opción inválida. Por favor, ingrese un número de folio válido o 'X' para salir al menú anterior.")
+            print("Opción inválida. Por favor, ingrese un número de folio válido. [*]: Cancelar operación")
             continue
 
-        # Verificar si el paciente seleccionado tiene una cita pendiente
+        # Verificar si el folio seleccionado existe y tiene una cita pendiente
+        paciente_valido = False
+        cita_encontrada = False
         for id_cita, datos_cita in citas.items():
             if datos_cita[0] == folio_seleccionado and id_cita not in citas_realizadas:
+                paciente_valido = True
+                cita_encontrada = True
                 print("Cita del paciente seleccionado:")
-                print(f"Folio: {folio_seleccionado}, Fecha: {datos_cita[1]}, Turno: {datos_cita[2]}")
-                confirmacion = input("¿Está seguro de eliminar esta cita? (s/n): ").strip().lower()
-                if confirmacion == "s":
+                print("Folio: {}, Fecha: {}, Turno: {}".format(folio_seleccionado, datos_cita[1], datos_cita[2]))
+                confirmacion = input("¿Está seguro de eliminar esta cita? (S/N): ").strip().upper()
+                if confirmacion == "S":
                     del citas[id_cita]
                     print("Cita eliminada correctamente.")
-                return
+                    break
+                elif confirmacion != "X":
+                    print("Opción inválida. Por favor, ingrese 'S' para confirmar la cancelación o 'X' para volver.")
+                    continue
 
-        print("El paciente seleccionado no tiene citas pendientes.")
-        
-        
-        
+        if not paciente_valido:
+            print("El folio ingresado no es válido o el paciente no tiene citas pendientes. [*]: Cancelar operación")
+        elif not cita_encontrada:
+            print("El paciente seleccionado no tiene citas pendientes. [*]: Cancelar operación")
+            
+            
 # CONSULTAS Y REPORTES
 def consultas_reportes():
   while True:
@@ -605,35 +632,35 @@ def menu_periodo_paciente():
       flag_salir = False
       while True:
         # Fecha inicial
-        _fecha_inicial = input('Ingresa la fecha inicial (mm/dd/aaaa) [*]: Cancelar operación\n').strip()
+        _fecha_inicial = input('Ingresa la fecha inicial (mm/dd/aaaa)\n').strip()
         if _fecha_inicial.upper() == '*':
           break
         # 1
         if not _fecha_inicial:
-          print("\nOpción no se puede omitir. Inténtelo de nuevo.")
+          print("\nOpción no se puede omitir. Inténtelo de nuevo. [*]: Cancelar operación")
           continue
         # 2
         try:
           fecha_inicial = datetime.datetime.strptime(_fecha_inicial, '%m/%d/%Y').date()
         except Exception:
-          print('\nFecha inválida. Intenta de nuevo.')
+          print('\nFecha inválida. Intenta de nuevo. [*]: Cancelar operación')
           continue
         
         while True:
           # Fecha final
-          _fecha_final = input('Ingresa la fecha final (mm/dd/aaaa) [*]: Cancelar operación\n').strip()
+          _fecha_final = input('Ingresa la fecha final (mm/dd/aaaa)\n').strip()
           if _fecha_final.upper() == '*':
             flag_salir = True
             break
           # 1
           if not _fecha_final:
-            print("\nOpción no se puede omitir. Inténtelo de nuevo.")
+            print("\nOpción no se puede omitir. Inténtelo de nuevo. [*]: Cancelar operación")
             continue
           # 2
           try:
             fecha_final = datetime.datetime.strptime(_fecha_final, '%m/%d/%Y').date()
           except Exception:
-            print('\nFecha inválida. Intenta de nuevo.')
+            print('\nFecha inválida. Intenta de nuevo. [*]: Cancelar operación')
             continue
           break
         if flag_salir:
@@ -641,7 +668,7 @@ def menu_periodo_paciente():
         
         # 1
         if fecha_final < fecha_inicial:
-          print('\nError. La fecha final debe ser superior o igual a la fecha inicial.')
+          print('\nError. La fecha final debe ser superior o igual a la fecha inicial. [*]: Cancelar operación')
           continue
         
         cita_encontrada = False
@@ -689,22 +716,22 @@ def menu_periodo_paciente():
     # REPORTE DE CITAS POR PACIENTE
     if op_periodo_paciente == 'B':
       while True:
-        _clave_paciente = input('Ingresa la clave del paciente [*]: Cancelar operación\n').strip()
+        _clave_paciente = input('Ingresa la clave del paciente\n').strip()
         if _clave_paciente.upper() == '*':
           break
         # 1
         if not _clave_paciente:  
-          print("Opción no se puede omitir. Inténtelo de nuevo.")
+          print("Opción no se puede omitir. Inténtelo de nuevo. [*]: Cancelar operación")
           continue
         # 2
         try:
           clave_paciente = int(_clave_paciente)
         except Exception:
-          print("La clave solo puede contener datos numéricos enteros. Intenta de nuevo.\n")
+          print("La clave solo puede contener datos numéricos enteros. Intenta de nuevo. [*]: Cancelar operación\n")
           continue
         # 3
         if clave_paciente not in pacientes:
-          print('\nEl paciente no está registrado.')
+          print('\nEl paciente no está registrado. [*]: Cancelar operación')
           continue
         
         primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo = pacientes[clave_paciente]
@@ -759,22 +786,22 @@ def menu_listado_busqueda_clave_apellidos():
     # BÚSQUEDA POR CLAVE DE PACIENTE
     if op_listado_busqueda == 'B':
       while True:
-        _clave_paciente = input('Ingresa la clave del paciente a buscar [*]: Cancelar operación\n').strip()
+        _clave_paciente = input('Ingresa la clave del paciente a buscar\n').strip()
         if _clave_paciente.upper() == '*':
           break
         # 1
         if not _clave_paciente: # Si está vacío
-          print("Opción no se puede omitir. Intenta de nuevo.")
+          print("Opción no se puede omitir. Intenta de nuevo. [*]: Cancelar operación")
           continue
         # 2
         try:
           clave_paciente = int(_clave_paciente)
         except Exception:
-          print("La clave solo puede contener datos numéricos enteros. Intenta de nuevo.\n")
+          print("La clave solo puede contener datos numéricos enteros. Intenta de nuevo. [*]: Cancelar operación\n")
           continue
         # 3
         if clave_paciente not in pacientes:
-          print('\nEl paciente no está registrado.')
+          print('\nEl paciente no está registrado. [*]: Cancelar operación')
           break
         
         print('\n***************************************************************************************************************')
@@ -818,31 +845,31 @@ def menu_listado_busqueda_clave_apellidos():
       flag_salir = False
       while True: 
         # Nombre
-        nombre_u = input('Ingresa el nombre [*]: Cancelar operación\n').title().strip()
+        nombre_u = input('Ingresa el nombre\n').title().strip()
         if nombre_u == '*':
           break
         # 1
         if not nombre_u:
-          print("\nOpción no se puede omitir. Inténtelo de nuevo.")
+          print("\nOpción no se puede omitir. Inténtelo de nuevo. [*]: Cancelar operación")
           continue
         # 2
         if not nombre_u.replace(' ', '').isalpha():
-          print('\nError. Solo se aceptan caracteres alfabéticos. Intente de nuevo.')
+          print('\nError. Solo se aceptan caracteres alfabéticos. Intente de nuevo. [*]: Cancelar operación')
           continue
         
         while True:
           # Primer apellido
-          primer_apellido_u = input('Ingresa el primer apellido [*]: Cancelar operación\n').title().strip()
+          primer_apellido_u = input('Ingresa el primer apellido\n').title().strip()
           if primer_apellido_u == '*':
             flag_salir = True
             break
           # 1
           if not primer_apellido_u:
-            print("\nOpción no se puede omitir. Inténtelo de nuevo.")
+            print("\nOpción no se puede omitir. Inténtelo de nuevo. [*]: Cancelar operación")
             continue
           # 2
           if not primer_apellido_u.replace(' ', '').isalpha():
-            print('\nError. Solo se aceptan caracteres alfabéticos. Intente de nuevo.')
+            print('\nError. Solo se aceptan caracteres alfabéticos. Intente de nuevo. [*]: Cancelar operación')
             continue
           break
         if flag_salir:
@@ -850,7 +877,7 @@ def menu_listado_busqueda_clave_apellidos():
         
         while True:
           # Segundo apellido
-          segundo_apellido_u = input('Ingresa el segundo apellido [*]: Cancelar operación\n').title().strip()
+          segundo_apellido_u = input('Ingresa el segundo apellido\n').title().strip()
           if segundo_apellido_u == '*':
             flag_salir = True
             break
@@ -859,7 +886,7 @@ def menu_listado_busqueda_clave_apellidos():
             break
           # 2
           if not segundo_apellido_u.replace(' ', '').isalpha():
-            print('\nError. Solo se aceptan caracteres alfabéticos. Intente de nuevo.')
+            print('\nError. Solo se aceptan caracteres alfabéticos. Intente de nuevo. [*]: Cancelar operación')
             continue
           break
         if flag_salir:
@@ -942,6 +969,7 @@ def leer_csv(nombre_archivo):
     else:
         return datos
 
+
 # PROGRAMA PRINCIPAL
 # Lecturas
 pacientes = leer_csv('pacientes.csv')
@@ -950,12 +978,10 @@ if pacientes:
 
 citas = leer_csv('citas.csv')
 if citas:
-  # threading.Timer(3.0, lambda: print('Datos cargados de citas.csv ...')).start()
   print('Datos cargados de citas.csv ...')
 
 citas_realizadas = leer_csv('citas_realizadas.csv')
 if citas_realizadas:
-  # threading.Timer(3.0, lambda: print('Datos cargados de citas_realizadas.csv ...')).start()
   print('Datos cargados de citas_realizadas.csv ...')
   
 while True:
@@ -964,7 +990,10 @@ while True:
     case 'A':
       registro_pacientes()
     case 'B':
-      citas_crear_realizar_cancelar()
+      if not pacientes:
+        print('\nDebe haber al menos un paciente registrado para entrar al menú de citas.')
+      else:
+        citas_crear_realizar_cancelar()
     case 'C':
       consultas_reportes()
     case 'X':
