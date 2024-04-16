@@ -236,7 +236,7 @@ def crear_cita():
         if op_reagendar == 'S':
           fecha_cita = fecha_cita - datetime.timedelta(days=1)
           _fecha_cita = datetime.datetime.strftime(fecha_cita, '%m/%d/%Y')
-          print(f'La cita ha sido agendada para el sábado {_fecha_cita}\n')
+          print(f'La cita será agendada para el sábado {_fecha_cita}\n')
           break
         elif op_reagendar == 'N':
           print('\nDebes agendar la cita en otra fecha. [*]: Cancelar operación')
@@ -467,9 +467,15 @@ def cancelar_cita():
 
     # BÚSQUEDA POR FECHA
     if op_cancelar_fecha_paciente == 'A':
+      if not citas:
+        print('\nDebe haber al menos una cita creada para poder cancelarla.')
+        continue
       eliminar_por_fecha()
     # BÚSQUEDA POR PACIENTE
     elif op_cancelar_fecha_paciente == 'B':
+      if not citas:
+        print('\nDebe haber al menos una cita creada para poder cancelarla.')
+        continue
       cancelacion_por_paciente()
     elif op_cancelar_fecha_paciente == 'X':
       break
@@ -478,7 +484,7 @@ def cancelar_cita():
 def eliminar_por_fecha():
     while True:
         # Fecha
-        fecha_a_buscar = input('Ingresa la fecha a buscar (mm/dd/yyyy/)\n').strip()
+        fecha_a_buscar = input('Ingresa la fecha a buscar (mm/dd/yyyy)\n').strip()
         if fecha_a_buscar.upper() == "*":
             break
         # 1
@@ -488,7 +494,7 @@ def eliminar_por_fecha():
         # 2
         if not citas:
             print("No existen citas registradas todavía. [*]: Cancelar operación")
-            continue
+            break
         # 3
         try:
             fecha_a_buscar = datetime.datetime.strptime(fecha_a_buscar, "%m/%d/%Y").date()
@@ -514,25 +520,35 @@ def eliminar_por_fecha():
             print("\nNo hay citas programadas para la fecha ingresada o todas las citas ya han sido realizadas. [*]: Cancelar operación")
             continue
 
-        print("Citas encontradas para la fecha", fecha_a_buscar.strftime('%m/%d/%Y') + ":")
-        print("{:<30} {:<10}".format("Nombre del Paciente", "Turno"))
+        print("\nCitas encontradas para la fecha", fecha_a_buscar.strftime('%m/%d/%Y') + ":")
+        print("{:^10} {:^30} {:^10}".format("Folio","Nombre_completo", "Turno"))
         for id_cita, nombre_completo, turno, folio_paciente in citas_en_fecha:
-            print("{:<30} {:<10}".format(nombre_completo, turno))
+            print("{:^10} {:^30} {:^10}".format(id_cita, nombre_completo, turno))
 
-        folio_a_eliminar = input("Ingrese el folio del paciente para eliminar la cita o presione Enter para salir: ")
-        if folio_a_eliminar.isdigit():
-            folio_a_eliminar = int(folio_a_eliminar)
-            if folio_a_eliminar in [folio_paciente for _, _, _, folio_paciente in citas_en_fecha]:
-                for id_cita, _, _, folio_paciente_cita in citas_en_fecha:
-                    if folio_paciente_cita == folio_a_eliminar:
-                        del citas[id_cita]
-                        print(f"Se ha eliminado la cita del paciente con folio {folio_a_eliminar}.")
-                        break
-            else:
-                print("El folio a eliminar no existe en la lista de citas.")
-        else:
-            print("El folio ingresado no es válido.")
-
+        _folio_a_eliminar = input("Ingrese el folio de la cita a eliminar\n").strip()
+        if _folio_a_eliminar == '*':
+          break
+        # 1
+        if not _folio_a_eliminar:
+            print("\nOpción no se puede omitir. Inténtelo de nuevo. [*]: Cancelar operación")
+            continue
+        # 2
+        try:
+          folio_a_eliminar = int(_folio_a_eliminar)
+        except Exception:
+          print('\nEl valor debe ser de tipo entero. Intenta de nuevo. [*]: Cancelar operación')
+          continue
+        # 3
+        if folio_a_eliminar not in [id_cita for id_cita, _, _, _ in citas_en_fecha]:
+          print("\nEl folio de cita a eliminar no existe en las citas desplegadas. [*]: Cancelar operación")
+          continue
+        # Eliminación
+        for id_cita, _, _, _ in citas_en_fecha:
+          if folio_a_eliminar == id_cita:
+            del citas[id_cita]
+            print(f"\nSe ha eliminado la cita {id_cita} del paciente {nombre_completo}")
+            break
+          
 # BÚSQUEDA POR PACIENTE
 def cancelacion_por_paciente():
     while True:
@@ -556,49 +572,80 @@ def cancelacion_por_paciente():
                 nombre = datos_paciente[2]
                 apellido_paterno = datos_paciente[0]
                 apellido_materno = datos_paciente[1]
-                print("{:<10} {:<20} {:<20} {:<20}".format(folio, nombre, apellido_paterno, apellido_materno))
+                print("{:^10} {:^20} {:^20} {:^20}".format(folio, nombre, apellido_paterno, apellido_materno))
         else:
             print("No hay pacientes con citas pendientes.")
             return  # Salir si no hay pacientes con citas pendientes
 
         # Capturar el folio del paciente seleccionado por el usuario
-        opcion = input("Ingrese el folio del paciente para eliminarlo\n").strip().upper()
+        opcion = input("Ingresa el folio del paciente al cual deseas eliminar alguna cita\n").strip().upper()
         if opcion == "*":
-            print("Regresando al menú anterior...")
             break
         # 1
         elif not opcion:
-            print("No ha ingresado ningún folio. [*]: Cancelar operación")
+            print("\nOpción no se puede omitir. [*]: Cancelar operación")
             continue
         # 2
         try:
             folio_seleccionado = int(opcion)
-        except ValueError:
-            print("Opción inválida. No se aceptan caracteres alfabéticos. [*]: Cancelar operación")
+        except Exception:
+            print("\nOpción inválida. Solo se aceptan números enteros. [*]: Cancelar operación")
             continue
 
         # Verificar si el folio seleccionado existe y tiene una cita pendiente
-        paciente_valido = False
         cita_encontrada = False
+        encabezado = True
+        lista_folios_citas = []
         for id_cita, datos_cita in citas.items():
             if datos_cita[0] == folio_seleccionado and id_cita not in citas_realizadas:
-                paciente_valido = True
+                if encabezado:
+                    print("{:^10} {:^20} {:^10}".format("Folio_cita", "Fecha", "Turno"))
+                    encabezado = False
+                print("{:^10} {:^20} {:^10}".format(id_cita, datos_cita[1], datos_cita[2]))
+                lista_folios_citas.append([id_cita])
                 cita_encontrada = True
-                print("Cita del paciente seleccionado:")
-                print("Folio: {}, Fecha: {}, Turno: {}".format(folio_seleccionado, datos_cita[1], datos_cita[2]))
-                confirmacion = input("¿Está seguro de eliminar esta cita? (S/N): ").strip().upper()
-                if confirmacion == "S":
-                    del citas[id_cita]
-                    print("Cita eliminada correctamente.")
-                    break
-                elif confirmacion != "X":
-                    print("Opción inválida. Por favor, ingrese 'S' para confirmar la cancelación o 'X' para volver.")
-                    continue
+                
+        if not cita_encontrada:
+          print('\nNo existen citas pendientes por eliminar del paciente')
+          return
+        
+        _folio_a_eliminar = input("Ingrese el folio de la cita a eliminar\n").strip()
+        if _folio_a_eliminar == '*':
+          break
+        # 1
+        if not _folio_a_eliminar:
+            print("\nOpción no se puede omitir. Inténtelo de nuevo. [*]: Cancelar operación")
+            continue
+        # 2
+        try:
+          folio_a_eliminar = int(_folio_a_eliminar)
+        except Exception:
+          print('\nEl valor debe ser de tipo entero. Intenta de nuevo. [*]: Cancelar operación')
+          continue
+        # 3
+        if folio_a_eliminar not in lista_folios_citas:
+          print("\nEl folio de cita a eliminar no existe en las citas desplegadas. [*]: Cancelar operación")
+          continue
+        
+        # Eliminación
+        del citas[folio_a_eliminar]
+        print("\nCita eliminada correctamente.")
+        break
 
-        if not paciente_valido:
-            print("\nEl folio ingresado no es válido o el paciente no tiene citas pendientes.")
-        elif not cita_encontrada:
-            print("\nEl paciente seleccionado no tiene citas pendientes.")
+                
+        # folio_cita_eliminar = input("Ingresa el folio de la cita que deseas eliminar\n").strip().upper()
+        # if folio_cita_eliminar == "S":
+        #     del citas[id_cita]
+        #     print("Cita eliminada correctamente.")
+        #     break
+        # elif folio_cita_eliminar != "X":
+        #     print("Opción inválida. Por favor, ingrese 'S' para confirmar la cancelación o 'X' para volver.")
+        #     continue
+
+        # if not paciente_valido:
+        #     print("\nEl folio ingresado no es válido o el paciente no tiene citas pendientes.")
+        # elif not cita_encontrada:
+        #     print("\nEl paciente seleccionado no tiene citas pendientes.")
             
             
 # CONSULTAS Y REPORTES
