@@ -125,7 +125,7 @@ def registro_pacientes():
       if sexo == '*':
         flag_salir = True
         break
-      # 1
+        
       if not sexo:
         op = elegir_opcion('Si se omite el sexo se guardará como "(N)o contestó". ¿Deseas intentarlo de nuevo? S/N\n', 'SN')
         if op == 'S':
@@ -133,6 +133,10 @@ def registro_pacientes():
         elif op == 'N':
           sexo = 'N'
           break
+      # 1
+      if not sexo.isalpha():
+        print('\nSolo ingresar caracteres alfabéticos. Intenta de nuevo. [*]: Cancelar operación')
+        continue
       # 2
       if sexo not in ['H', 'M']:
         print('\nOpción inválida. Intenta de nuevo. [*]: Cancelar operación')
@@ -382,7 +386,7 @@ def realizar_citas():
       if len(_sistolica) > 3:
         print('\nSolo puede contener hasta 3 dígitos. Intenta de nuevo. [*]: Cancelar operación')
         continue
-      # 5 Agrega ceros a la izquierda
+
       _sistolica = _sistolica.rjust(3, '0')
       break
     if flag_salir:
@@ -412,7 +416,7 @@ def realizar_citas():
       if len(_diastolica) > 3:
         print('\nSolo puede contener hasta 3 dígitos. Intenta de nuevo. [*]: Cancelar operación')
         continue
-      # 5 Agrega ceros a la izquierda para cumplir los 3 digitos
+
       while len(_diastolica) < 3:
         _diastolica = '0' + _diastolica
       break
@@ -434,7 +438,6 @@ def realizar_citas():
         print('\nEl diagnóstico excedió los 200 caracteres. Intenta de nuevo. [*]: Cancelar operación')
         continue
       break
-    
     if flag_salir:
       break
     
@@ -474,6 +477,7 @@ def cancelar_cita():
 # BÚSQUEDA POR FECHA
 def eliminar_por_fecha():
     while True:
+        # Fecha
         fecha_a_buscar = input('Ingresa la fecha a buscar (mm/dd/yyyy/)\n').strip()
         if fecha_a_buscar.upper() == "*":
             break
@@ -505,9 +509,9 @@ def eliminar_por_fecha():
                 apellido_materno = pacientes[folio_paciente][1]
                 nombre_completo = f"{nombre_paciente} {apellido_paterno} {apellido_materno}"
                 citas_en_fecha.append((id_cita, nombre_completo, turno, folio_paciente))
-
+        # 4
         if not citas_en_fecha:
-            print("No hay citas programadas para la fecha ingresada o todas las citas ya han sido realizadas.")
+            print("\nNo hay citas programadas para la fecha ingresada o todas las citas ya han sido realizadas. [*]: Cancelar operación")
             continue
 
         print("Citas encontradas para la fecha", fecha_a_buscar.strftime('%m/%d/%Y') + ":")
@@ -570,7 +574,7 @@ def cancelacion_por_paciente():
         try:
             folio_seleccionado = int(opcion)
         except ValueError:
-            print("Opción inválida. Por favor, ingrese un número de folio válido. [*]: Cancelar operación")
+            print("Opción inválida. No se aceptan caracteres alfabéticos. [*]: Cancelar operación")
             continue
 
         # Verificar si el folio seleccionado existe y tiene una cita pendiente
@@ -592,9 +596,9 @@ def cancelacion_por_paciente():
                     continue
 
         if not paciente_valido:
-            print("El folio ingresado no es válido o el paciente no tiene citas pendientes. [*]: Cancelar operación")
+            print("\nEl folio ingresado no es válido o el paciente no tiene citas pendientes.")
         elif not cita_encontrada:
-            print("El paciente seleccionado no tiene citas pendientes. [*]: Cancelar operación")
+            print("\nEl paciente seleccionado no tiene citas pendientes.")
             
             
 # CONSULTAS Y REPORTES
