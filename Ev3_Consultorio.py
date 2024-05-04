@@ -3,6 +3,7 @@ import re
 import csv
 import sys
 import sqlite3
+import os
 
 fecha_actual = datetime.date.today()
 
@@ -140,6 +141,16 @@ def registro_pacientes():
     try:
       with sqlite3.connect('Consultorio.db') as conn:
         cursor = conn.cursor()
+          
+        # Creación de tabla Pacientes
+        cursor.execute('CREATE TABLE IF NOT EXISTS Pacientes (\
+          id_paciente INTEGER PRIMARY KEY, \
+          primer_apellido TEXT NOT NULL, \
+          segundo_apellido TEXT NOT NULL, \
+          nombre TEXT NOT NULL, \
+          fecha_nacimiento TIMESTAMP NOT NULL, \
+          sexo TEXT NOT NULL);')
+        
         cursor.execute('INSERT INTO Pacientes (primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo) \
                         VALUES(?,?,?,?,?)', paciente)
     except sqlite3.Error as e:
@@ -147,13 +158,11 @@ def registro_pacientes():
     except:
         print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
     finally:
+        print(f'La clave asignada al paciente fue {cursor.lastrowid}')
         if (conn):
             conn.close()
             print("Se ha cerrado la conexión")
     
-    # print(pacientes[clave_paciente])
-    
-    # print(f'\nEl paciente {clave_paciente} ha sido registrado con éxito.')
     break
 
 def citas_crear_realizar_cancelar():
@@ -166,14 +175,14 @@ def citas_crear_realizar_cancelar():
     if op_citas_crear_realizar_cancelar == 'A':
       crear_cita()
     if op_citas_crear_realizar_cancelar == 'B':
-      if not citas:
-        print('\nDebe haber al menos una cita creada para poder realizarla.')
-        continue
+      # if not citas:
+      #   print('\nDebe haber al menos una cita creada para poder realizarla.')
+      #   continue
       realizar_citas()
     if op_citas_crear_realizar_cancelar == 'C':
-      if not citas:
-        print('\nDebe haber al menos una cita creada para poder cancelarla.')
-        continue
+      # if not citas:
+      #   print('\nDebe haber al menos una cita creada para poder cancelarla.')
+      #   continue
       cancelar_cita()
     # SALIDA
     if op_citas_crear_realizar_cancelar == 'X':
@@ -201,7 +210,24 @@ def crear_cita():
       print("\nLa clave solo puede contener datos numéricos enteros. Intenta de nuevo. [*]: Cancelar operación")
       continue
     # 3
-    if clave_paciente not in pacientes:
+    try:
+      with sqlite3.connect('Consultorio.db') as conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT id_paciente FROM Pacientes WHERE id_paciente = ?', (clave_paciente,))
+        id_paciente_tupla = cursor.fetchone() # Retorna None si está vacío
+        
+        print(id_paciente_tupla)
+        
+    except sqlite3.Error as e:
+      print(e)
+    except:
+        print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
+    finally:
+        if (conn):
+            conn.close()
+            print("Se ha cerrado la conexión")
+            
+    if id_paciente_tupla == None:
       print('\nError. El paciente no está registrado en el sistema. [*]: Cancelar operación')
       continue
     
@@ -282,8 +308,25 @@ def crear_cita():
     try:
       with sqlite3.connect('Consultorio.db') as conn:
         cursor = conn.cursor()
+        
+        # Creación de tabla Citas
+        cursor.execute('CREATE TABLE IF NOT EXISTS Citas (\
+          id_cita INTEGER PRIMARY KEY, \
+          id_paciente TEXT NOT NULL, \
+          fecha_cita TIMESTAMP NOT NULL, \
+          turno_cita TEXT NOT NULL, \
+          hora_llegada TEXT NOT NULL, \
+          peso_kg TEXT NOT NULL, \
+          estatura_cm TEXT NOT NULL, \
+          presion_arterial TEXT NOT NULL, \
+          diagnostico TEXT NOT NULL, \
+          edad TEXT NOT NULL, \
+          FOREIGN KEY(id_paciente) REFERENCES Pacientes(id_paciente));')
+        
         cursor.execute('INSERT INTO Citas (id_paciente, fecha_cita, turno_cita, hora_llegada, peso_kg, estatura_cm, presion_arterial, diagnostico, edad) \
                         VALUES(?,?,?,?,?,?,?,?,?)', cita)
+        print(f'El folio de la cita asignada fue {cursor.lastrowid}')
+
     except sqlite3.Error as e:
       print(e)
     except:
@@ -292,20 +335,11 @@ def crear_cita():
         if (conn):
             conn.close()
             print("Se ha cerrado la conexión")
-    
-    # print(pacientes[clave_paciente])
-    
-    # print(f'\nEl paciente {clave_paciente} ha sido registrado con éxito.')
     break
-    
-    # print(citas[folio_cita])
-    
-    # print(f'\nLa cita {folio_cita} ha sido registrada con éxito.')
 
 
 # REALIZACIÓN DE CITAS PROGRAMADASs
 def realizar_citas():
-  flag_salir = False # Controla si salimos o no del while exterior
   while True:
     # Folio de la cita
     _folio_cita = input('Ingresa el folio de la cita (Número entero)\n').strip()
@@ -322,6 +356,25 @@ def realizar_citas():
       print('\nEl folio solo puede contener datos numéricos enteros. Intenta de nuevo. [*]: Cancelar operación')
       continue
     # 3
+    try:
+      with sqlite3.connect('Consultorio.db') as conn:
+        cursor = conn.cursor()
+        
+        cursor.execute('SELECT * FROM Citas WHERE ')
+        citas_lista = cursor.fetchall()
+        
+        print(f'El folio de la cita asignada fue {cursor.lastrowid}')
+
+    except sqlite3.Error as e:
+      print(e)
+    except:
+        print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
+    finally:
+        if (conn):
+            conn.close()
+            print("Se ha cerrado la conexión")
+      
+    
     if folio_cita not in citas:
       print('\nLa cita no ha sido registrada con anterioridad. [*]: Cancelar operación')
       continue
@@ -471,9 +524,25 @@ def realizar_citas():
     try:
       with sqlite3.connect('Consultorio.db') as conn:
         cursor = conn.cursor()
+        
+        # Creación de tabla Citas
+        cursor.execute('CREATE TABLE IF NOT EXISTS Citas (\
+          id_cita INTEGER PRIMARY KEY, \
+          id_paciente TEXT NOT NULL, \
+          fecha_cita TIMESTAMP NOT NULL, \
+          turno_cita TEXT NOT NULL, \
+          hora_llegada TEXT NOT NULL, \
+          peso_kg TEXT NOT NULL, \
+          estatura_cm TEXT NOT NULL, \
+          presion_arterial TEXT NOT NULL, \
+          diagnostico TEXT NOT NULL, \
+          edad TEXT NOT NULL, \
+          FOREIGN KEY(id_paciente) REFERENCES Pacientes(id_paciente));')
+        
         cursor.execute('UPDATE \
                         SET hora_llegada = ?, peso_kg = ?, estatura_cm = ?, presion_arterial = ?, diagnostico = ?, edad = ? \
                         WHERE id_cita = ?', cita_realizada)
+        print(f'La cita realizada fue la cita {cursor.lastrowid}')
     except sqlite3.Error as e:
       print(e)
     except:
@@ -483,9 +552,8 @@ def realizar_citas():
             conn.close()
             print("Se ha cerrado la conexión")
             
-    print(f'\nLa cita {folio_cita} se ha realizado correctamente.')
-    
     break
+
 
 def cancelar_cita():
   while True:
@@ -1034,20 +1102,55 @@ def leer_csv(nombre_archivo):
     else:
         return datos
 
+def crear_bd():
+  try:
+    with sqlite3.connect('Consultorio.bd') as conn:
+      cursor = conn.cursor()
+      # Pacientes
+      cursor.execute('CREATE TABLE IF NOT EXISTS Pacientes (\
+        id_paciente INTEGER PRIMARY KEY, \
+        primer_apellido TEXT NOT NULL, \
+        segundo_apellido TEXT NOT NULL, \
+        nombre TEXT NOT NULL, \
+        fecha_nacimiento TIMESTAMP NOT NULL, \
+        sexo TEXT NOT NULL);')
+      # Citas
+      cursor.execute('CREATE TABLE IF NOT EXISTS Citas (\
+        id_cita INTEGER PRIMARY KEY, \
+        id_paciente TEXT NOT NULL, \
+        fecha_cita TIMESTAMP NOT NULL, \
+        turno_cita TEXT NOT NULL, \
+        hora_llegada TEXT NOT NULL, \
+        peso_kg TEXT NOT NULL, \
+        estatura_cm TEXT NOT NULL, \
+        presion_arterial TEXT NOT NULL, \
+        diagnostico TEXT NOT NULL, \
+        edad TEXT NOT NULL, \
+        FOREIGN KEY(id_paciente) REFERENCES Pacientes(id_paciente));')
+      print('Base de datos creada')
+  except sqlite3.Error as e:
+      print(e)
+  except Exception:
+      print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
+  finally:
+      if (conn):
+          conn.close()
+          print("Se ha cerrado la conexión")
+          
 
 # PROGRAMA PRINCIPAL
 # Lecturas
-pacientes = leer_csv('pacientes.csv')
-if pacientes:
-  print('Datos cargados de pacientes.csv ...')
+# pacientes = leer_csv('pacientes.csv')
+# if pacientes:
+#   print('Datos cargados de pacientes.csv ...')
 
-citas = leer_csv('citas.csv')
-if citas:
-  print('Datos cargados de citas.csv ...')
+# citas = leer_csv('citas.csv')
+# if citas:
+#   print('Datos cargados de citas.csv ...')
 
-citas_realizadas = leer_csv('citas_realizadas.csv')
-if citas_realizadas:
-  print('Datos cargados de citas_realizadas.csv ...')
+# citas_realizadas = leer_csv('citas_realizadas.csv')
+# if citas_realizadas:
+#   print('Datos cargados de citas_realizadas.csv ...')
   
 while True:
   op_principal = mostrar_menu(menu_principal, '\nSistema de gestión de pacientes de un consultorio')
@@ -1055,10 +1158,11 @@ while True:
     case 'A':
       registro_pacientes()
     case 'B':
-      if not pacientes:
-        print('\nDebe haber al menos un paciente registrado para entrar al menú de citas.')
-      else:
-        citas_crear_realizar_cancelar()
+      citas_crear_realizar_cancelar()
+      # if not pacientes:
+      #   print('\nDebe haber al menos un paciente registrado para entrar al menú de citas.')
+      # else:
+      #   citas_crear_realizar_cancelar()
     case 'C':
       consultas_reportes()
     case 'X':

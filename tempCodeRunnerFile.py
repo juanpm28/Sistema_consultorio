@@ -1,4 +1,1 @@
-    # Hora de llegada del paciente
-import datetime
-hora_llegada = datetime.datetime.today().time()
-print(hora_llegada)
+x = 1 / 0  # This will raise a ZeroDivisionError

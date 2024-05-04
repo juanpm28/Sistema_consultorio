@@ -2,6 +2,8 @@ import datetime
 import re
 import csv
 import sys
+import sqlite3
+
 
 fecha_actual = datetime.date.today()
 
@@ -1007,6 +1009,42 @@ def leer_csv(nombre_archivo):
         return datos
 
 
+def crear_bd():
+  try:
+    with sqlite3.connect('Consultorio.bd') as conn:
+      cursor = conn.cursor()
+      # Pacientes
+      cursor.execute('CREATE TABLE IF NOT EXISTS Pacientes (\
+        id_paciente INTEGER PRIMARY KEY, \
+        primer_apellido TEXT NOT NULL, \
+        segundo_apellido TEXT NOT NULL, \
+        nombre TEXT NOT NULL, \
+        fecha_nacimiento TIMESTAMP NOT NULL, \
+        sexo TEXT NOT NULL);')
+      # Citas
+      cursor.execute('CREATE TABLE IF NOT EXISTS Citas (\
+        id_cita INTEGER PRIMARY KEY, \
+        id_paciente TEXT NOT NULL, \
+        fecha_cita TIMESTAMP NOT NULL \
+        turno_cita TEXT NOT NULL, \
+        hora_llegada TEXT, \
+        peso_kg TEXT, \
+        estatura_cm TEXT, \
+        presion_arterial TEXT, \
+        diagnostico TEXT, \
+        edad TEXT, \
+        FOREIGN KEY(id_paciente) REFERENCES Pacientes(id_paciente));')
+      print('Base de datos creada')
+  except sqlite3.Error as e:
+      print(e)
+  except Exception:
+      print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
+  finally:
+      if (conn):
+          conn.close()
+          print("Se ha cerrado la conexión")
+
+
 # PROGRAMA PRINCIPAL
 # Lecturas
 pacientes = leer_csv('pacientes.csv')
@@ -1048,3 +1086,4 @@ while True:
         break
     case _:
       print('Opción no reconocida.')
+      
