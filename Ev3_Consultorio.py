@@ -3,7 +3,19 @@ import re
 import csv
 import sys
 import sqlite3
-import os
+
+# Estructura de datos --------------------------------------------------------------------------------------------------------------
+
+# Pacientes (lista de tuplas de cada paciente)
+# [(id_paciente, primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo)]
+
+# Citas (lista de tuplas de cada cita)
+# [(id_cita, id_paciente, fecha_cita, turno_cita, hora_llegada, peso_kg, estatura_cm, presion_arterial, diagnostico, edad)]
+
+# Cita sin realizar
+# (id_cita, id_paciente, fecha_cita, turno_cita, NA, NA, NA, NA, NA, NA)
+
+# ----------------------------------------------------------------------------------------------------------------------------------
 
 fecha_actual = datetime.date.today()
 
@@ -160,9 +172,7 @@ def registro_pacientes():
     finally:
         print(f'La clave asignada al paciente fue {cursor.lastrowid}')
         if (conn):
-            conn.close()
-            print("Se ha cerrado la conexión")
-    
+            conn.close()    
     break
 
 def citas_crear_realizar_cancelar():
@@ -191,11 +201,9 @@ def citas_crear_realizar_cancelar():
 
 # PROGRAMACIÓN DE CITAS
 def crear_cita():
+  
+  # Clave del paciente
   while True:
-    # Folio de la cita
-    # folio_cita = len(citas) + 1
-    
-    # Clave del paciente
     _clave_paciente = input('Ingresa la clave del paciente\n').strip()
     if _clave_paciente.upper() == '*':
       break
@@ -209,14 +217,14 @@ def crear_cita():
     except Exception:
       print("\nLa clave solo puede contener datos numéricos enteros. Intenta de nuevo. [*]: Cancelar operación")
       continue
-    # 3
+    # 3.1
     try:
       with sqlite3.connect('Consultorio.db') as conn:
         cursor = conn.cursor()
         cursor.execute('SELECT id_paciente FROM Pacientes WHERE id_paciente = ?', (clave_paciente,))
-        id_paciente_tupla = cursor.fetchone() # Retorna None si está vacío
+        id_paciente_encontrado = cursor.fetchone() # Retorna None si está vacío
         
-        print(id_paciente_tupla)
+        print(id_paciente_encontrado)
         
     except sqlite3.Error as e:
       print(e)
@@ -225,14 +233,13 @@ def crear_cita():
     finally:
         if (conn):
             conn.close()
-            print("Se ha cerrado la conexión")
-            
-    if id_paciente_tupla == None:
+    # 3.2
+    if id_paciente_encontrado == None:
       print('\nError. El paciente no está registrado en el sistema. [*]: Cancelar operación')
       continue
     
+    # Fecha de la cita
     while True:  
-      # Fecha de la cita
       _fecha_cita = input('Ingresa la fecha de la cita (mm/dd/yyyy)\n').strip()
       if _fecha_cita.upper() == '*':
         return
@@ -269,11 +276,9 @@ def crear_cita():
           print('\nDebes agendar la cita en otra fecha. [*]: Cancelar operación')
           continue    
       break
-    if flag_salir:
-      break
     
+    # Turno de la cita
     while True:
-      # Turno de la cita
       menu_turno_cita = {'1':'Mañana', '2':'Mediodía', '3':'Tarde'}
       [print(f'[{k}] {v}') for k, v in menu_turno_cita.items()]
       _turno_cita = input('Ingresa el turno de la cita\n').strip()
@@ -334,14 +339,13 @@ def crear_cita():
     finally:
         if (conn):
             conn.close()
-            print("Se ha cerrado la conexión")
     break
 
 
 # REALIZACIÓN DE CITAS PROGRAMADASs
 def realizar_citas():
+  # Folio de la cita
   while True:
-    # Folio de la cita
     _folio_cita = input('Ingresa el folio de la cita (Número entero)\n').strip()
     if _folio_cita.upper() == '*':
       break
@@ -355,16 +359,16 @@ def realizar_citas():
     except Exception:
       print('\nEl folio solo puede contener datos numéricos enteros. Intenta de nuevo. [*]: Cancelar operación')
       continue
-    # 3
+    # 3.1
     try:
       with sqlite3.connect('Consultorio.db') as conn:
         cursor = conn.cursor()
-        
-        cursor.execute('SELECT * FROM Citas WHERE ')
+        # Obtención de cita buscada
+        cursor.execute('SELECT * FROM Citas WHERE id_cita = ?', folio_cita)
+        cita_buscada = cursor.fetchone()
+        # Obtención todas las citas
+        cursor.execute('SELECT * FROM Citas')
         citas_lista = cursor.fetchall()
-        
-        print(f'El folio de la cita asignada fue {cursor.lastrowid}')
-
     except sqlite3.Error as e:
       print(e)
     except:
@@ -372,19 +376,17 @@ def realizar_citas():
     finally:
         if (conn):
             conn.close()
-            print("Se ha cerrado la conexión")
-      
-    
-    if folio_cita not in citas:
+    # 3.2
+    if cita_buscada == None:
       print('\nLa cita no ha sido registrada con anterioridad. [*]: Cancelar operación')
       continue
-    #4
-    if folio_cita in citas_realizadas:
+    # 4
+    if cita_buscada[5] != 'NA':
       print('\nLa cita programada ya ha sido realizada. [*]: Cancelar operación')
       continue
     
-    # Clave paciente
-    clave_paciente = list(citas.values())[0]
+    # Clave del paciente
+    clave_paciente = cita_buscada[1]
     
     # Hora de llegada del paciente
     hora_llegada = datetime.datetime.now().time()
@@ -493,7 +495,7 @@ def realizar_citas():
     presion_arterial = f'{_sistolica}/{_diastolica}'
     print(presion_arterial)
       
-    # Diagnóstico (200 caracteres max)
+    # Diagnóstico (200 caracteres máximo)
     while True:
       diagnostico = input('Diagnóstico (200 caracteres máximo)\n').upper()
       if diagnostico.upper() == '*':
@@ -505,19 +507,33 @@ def realizar_citas():
       break
     
     # Edad (fecha_cita - fecha_nacimiento)
-    clave_paciente = citas[folio_cita][0]
-    _fecha_nacimiento = pacientes[clave_paciente][3]
+    # 1.1
+    try:
+      with sqlite3.connect('Consultorio.db') as conn:
+        cursor = conn.cursor()
+        # Obtención datos del paciente buscado
+        cursor.execute('SELECT * FROM Pacientes WHERE id_paciente = ?', clave_paciente)
+        paciente_buscado = cursor.fetchone()
+    except sqlite3.Error as e:
+      print(e)
+    except:
+        print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
+    finally:
+        if (conn):
+            conn.close()
+    # 1.2
+    _fecha_nacimiento = str(paciente_buscado[4]) # ****************
     fecha_nacimiento = datetime.datetime.strptime(_fecha_nacimiento, '%m/%d/%Y').date()
     
-    _fecha_cita = citas[folio_cita][1]
+    _fecha_cita = str(cita_buscada[2])
     fecha_cita = datetime.datetime.strptime(_fecha_cita, '%m/%d/%Y').date()
     edad = fecha_cita.year - fecha_nacimiento.year
     
     if (fecha_nacimiento.month, fecha_nacimiento.day) > (fecha_cita.month, fecha_cita.day):
       edad = edad - 1
     
-    # Ingreso del registro {folio_cita: [id_paciente, hora_llegada,....]
-    cita_realizada = (_hora_llegada, peso_kg, estatura_cm, presion_arterial, diagnostico, str(edad), clave_paciente)
+    # Ingreso del registro {folio_cita: [id_paciente, hora_llegada,...., no confundirse con clave_paciente]
+    cita_realizada = (_hora_llegada, peso_kg, estatura_cm, presion_arterial, diagnostico, str(edad), folio_cita)
     
     
     # Actualización de datos a base de datos
@@ -550,7 +566,6 @@ def realizar_citas():
     finally:
         if (conn):
             conn.close()
-            print("Se ha cerrado la conexión")
             
     break
 
@@ -560,6 +575,20 @@ def cancelar_cita():
     op_cancelar_fecha_paciente = mostrar_menu({ 'A':'Búsqueda por fecha', 
                                                 'B':'Búsqueda por paciente', 
                                                 'X':'Volver al menú anterior'})
+    # Extracción de las citas
+    try:
+      with sqlite3.connect('Consultorio.db') as conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM Citas')
+        citas = cursor.fetchall()
+        print(citas)
+    except sqlite3.Error as e:
+      print(e)
+    except:
+        print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
+    finally:
+        if (conn):
+            conn.close()
 
     # BÚSQUEDA POR FECHA
     if op_cancelar_fecha_paciente == 'A':
