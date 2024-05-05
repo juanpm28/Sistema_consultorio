@@ -162,20 +162,20 @@ def registro_pacientes():
           nombre TEXT NOT NULL, \
           fecha_nacimiento TIMESTAMP NOT NULL, \
           sexo TEXT NOT NULL);')
-        
+        # Ingreso de datos
         cursor.execute('INSERT INTO Pacientes (primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo) \
                         VALUES(?,?,?,?,?)', paciente)
+        print(f'La clave asignada al paciente fue {cursor.lastrowid}')
     except sqlite3.Error as e:
       print(e)
     except:
         print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
     finally:
-        print(f'La clave asignada al paciente fue {cursor.lastrowid}')
         if (conn):
             conn.close()    
     break
 
-def citas_crear_realizar_cancelar():
+def citas_crear_realizar_cancelar_menu():
   while True:
     op_citas_crear_realizar_cancelar = mostrar_menu({ 'A':'Programación de citas', 
                                                       'B':'Realización de citas programadas', 
@@ -193,7 +193,7 @@ def citas_crear_realizar_cancelar():
       # if not citas:
       #   print('\nDebe haber al menos una cita creada para poder cancelarla.')
       #   continue
-      cancelar_cita()
+      cancelar_cita_menu()
     # SALIDA
     if op_citas_crear_realizar_cancelar == 'X':
       break
@@ -223,9 +223,6 @@ def crear_cita():
         cursor = conn.cursor()
         cursor.execute('SELECT id_paciente FROM Pacientes WHERE id_paciente = ?', (clave_paciente,))
         id_paciente_encontrado = cursor.fetchone() # Retorna None si está vacío
-        
-        print(id_paciente_encontrado)
-        
     except sqlite3.Error as e:
       print(e)
     except:
@@ -560,7 +557,7 @@ def realizar_citas():
           diagnostico TEXT NOT NULL, \
           edad INTEGER NOT NULL, \
           FOREIGN KEY(id_paciente) REFERENCES Pacientes(id_paciente));')
-        
+        # Actualización
         cursor.execute('UPDATE Citas\
                         SET hora_llegada = ?, peso_kg = ?, estatura_cm = ?, presion_arterial = ?, diagnostico = ?, edad = ? \
                         WHERE id_cita = ?', cita_realizada)
@@ -576,7 +573,7 @@ def realizar_citas():
     break
 
 
-def cancelar_cita():
+def cancelar_cita_menu():
   while True:
     op_cancelar_fecha_paciente = mostrar_menu({ 'A':'Búsqueda por fecha', 
                                                 'B':'Búsqueda por paciente', 
@@ -585,9 +582,8 @@ def cancelar_cita():
     try:
       with sqlite3.connect('Consultorio.db') as conn:
         cursor = conn.cursor()
-        cursor.execute('SELECT * FROM Citas')
+        cursor.execute("SELECT * FROM Citas WHERE peso_kg = 'NA';")
         citas = cursor.fetchall()
-        print(citas)
     except sqlite3.Error as e:
       print(e)
     except:
@@ -614,7 +610,7 @@ def cancelar_cita():
 # BÚSQUEDA POR FECHA
 def eliminar_por_fecha():
     while True:
-        # Fecha
+        # Fecha cita
         fecha_a_buscar = input('Ingresa la fecha a buscar (mm/dd/yyyy)\n').strip()
         if fecha_a_buscar.upper() == "*":
             break
@@ -623,63 +619,77 @@ def eliminar_por_fecha():
             print("Opción no se puede omitir. Inténtelo de nuevo. [*]: Cancelar operación")
             continue
         # 2
-        if not citas:
-            print("No existen citas registradas todavía. [*]: Cancelar operación")
-            break
+        # if not citas:
+        #     print("No existen citas registradas todavía. [*]: Cancelar operación")
+        #     break
         # 3
         try:
-            fecha_a_buscar = datetime.datetime.strptime(fecha_a_buscar, "%m/%d/%Y").date()
+            fecha_a_buscar = datetime.datetime.strptime(fecha_a_buscar, "%m/%d/%Y")
         except Exception:
             print('\nFecha inválida. Intenta de nuevo. [*]: Cancelar operación')
             continue
         
-        citas_en_fecha = []
-        for id_cita, datos_cita in citas.items():
-            fecha_cita = datetime.datetime.strptime(datos_cita[1], '%m/%d/%Y').date()
-            if fecha_cita == fecha_a_buscar:
-                if id_cita in citas_realizadas:
-                    continue
-                turno = datos_cita[2]
-                folio_paciente = datos_cita[0]
-                nombre_paciente = pacientes[folio_paciente][2]
-                apellido_paterno = pacientes[folio_paciente][0]
-                apellido_materno = pacientes[folio_paciente][1]
-                nombre_completo = f"{nombre_paciente} {apellido_paterno} {apellido_materno}"
-                citas_en_fecha.append((id_cita, nombre_completo, turno, folio_paciente))
+        try:
+          with sqlite3.connect('Consultorio.db') as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT C.id_cita, P.nombre || ' ' || P.primer_apellido || ' ' || P.segundo_apellido, C.turno_cita \
+                            FROM Citas C \
+                            INNER JOIN Pacientes P \
+                            ON C.id_paciente = P.id_paciente \
+                            WHERE peso_kg = 'NA' AND fecha_cita = ?;", (fecha_a_buscar,))
+            citas_en_fecha = cursor.fetchall()     
+        except sqlite3.Error as e:
+          print(e)
+        except:
+            print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
+        finally:
+            if (conn):
+                conn.close()
         # 4
         if not citas_en_fecha:
             print("\nNo hay citas programadas para la fecha ingresada o todas las citas ya han sido realizadas. [*]: Cancelar operación")
             continue
-
+        # Impresión de citas encontradas en la fecha ingresada
         print("\nCitas encontradas para la fecha", fecha_a_buscar.strftime('%m/%d/%Y') + ":")
         print("{:^10} {:^30} {:^10}".format("Folio","Nombre_completo", "Turno"))
-        for id_cita, nombre_completo, turno, folio_paciente in citas_en_fecha:
+        for id_cita, nombre_completo, turno in citas_en_fecha:
             print("{:^10} {:^30} {:^10}".format(id_cita, nombre_completo, turno))
-
-        _folio_a_eliminar = input("Ingrese el folio de la cita a eliminar\n").strip()
-        if _folio_a_eliminar == '*':
-          break
-        # 1
-        if not _folio_a_eliminar:
+            
+        # Folio cita
+        while True:
+          _folio_a_eliminar = input("Ingrese el folio de la cita a eliminar\n").strip()
+          if _folio_a_eliminar == '*':
+            return
+          # 1
+          if not _folio_a_eliminar:
             print("\nOpción no se puede omitir. Inténtelo de nuevo. [*]: Cancelar operación")
             continue
-        # 2
-        try:
-          folio_a_eliminar = int(_folio_a_eliminar)
-        except Exception:
-          print('\nEl valor debe ser de tipo entero. Intenta de nuevo. [*]: Cancelar operación')
-          continue
-        # 3
-        if folio_a_eliminar not in [id_cita for id_cita, _, _, _ in citas_en_fecha]:
-          print("\nEl folio de cita a eliminar no existe en las citas desplegadas. [*]: Cancelar operación")
-          continue
+          # 2
+          try:
+            folio_a_eliminar = int(_folio_a_eliminar)
+          except Exception:
+            print('\nEl valor debe ser de tipo entero. Intenta de nuevo. [*]: Cancelar operación')
+            continue
+          # 3
+          if folio_a_eliminar not in [id_cita for id_cita, _, _ in citas_en_fecha]:
+            print("\nEl folio de cita a eliminar no existe en las citas desplegadas. [*]: Cancelar operación")
+            continue
+          break
+        
         # Eliminación
-        for id_cita, _, _, _ in citas_en_fecha:
-          if folio_a_eliminar == id_cita:
-            del citas[id_cita]
-            print(f"\nSe ha eliminado la cita {id_cita} del paciente {nombre_completo}")
-            break
-          
+        try:
+          with sqlite3.connect('Consultorio.db') as conn:
+            cursor = conn.cursor()
+            cursor.execute('DELETE FROM Citas WHERE id_cita = ?;', (folio_a_eliminar,))
+            print(f'Se ha eliminado la cita {folio_a_eliminar}')
+        except sqlite3.Error as e:
+          print(e)
+        except:
+            print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
+        finally:
+            if (conn):
+                conn.close()
+
 # BÚSQUEDA POR PACIENTE
 def cancelacion_por_paciente():
       pacientes_con_citas_pendientes = []
@@ -1193,7 +1203,7 @@ while True:
     case 'A':
       registro_pacientes()
     case 'B':
-      citas_crear_realizar_cancelar()
+      citas_crear_realizar_cancelar_menu()
       # if not pacientes:
       #   print('\nDebe haber al menos un paciente registrado para entrar al menú de citas.')
       # else:
