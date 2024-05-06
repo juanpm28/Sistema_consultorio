@@ -3,6 +3,8 @@ import re
 import csv
 import sys
 import sqlite3
+import pandas as pd
+from openpyxl import Workbook
 
 # Estructura de datos --------------------------------------------------------------------------------------------------------------
 
@@ -56,11 +58,7 @@ def mostrar_menu( opciones:dict,
 
 # REGISTRO DE PACIENTES
 def registro_pacientes():
-  
   while True:
-    # # Clave del paciente
-    # clave_paciente = len(pacientes) + 1
-    
     # Primer apellido
     primer_apellido = input('Ingresa el primer apellido\n').title().strip()
     if primer_apellido == '*':
@@ -201,7 +199,6 @@ def citas_crear_realizar_cancelar_menu():
 
 # PROGRAMACIÓN DE CITAS
 def crear_cita():
-  
   # Clave del paciente
   while True:
     _clave_paciente = input('Ingresa la clave del paciente\n').strip()
@@ -610,145 +607,162 @@ def cancelar_cita_menu():
 # BÚSQUEDA POR FECHA
 def eliminar_por_fecha():
     while True:
-        # Fecha cita
-        fecha_a_buscar = input('Ingresa la fecha a buscar (mm/dd/yyyy)\n').strip()
-        if fecha_a_buscar.upper() == "*":
-            break
-        # 1
-        if not fecha_a_buscar:
-            print("Opción no se puede omitir. Inténtelo de nuevo. [*]: Cancelar operación")
-            continue
-        # 2
-        # if not citas:
-        #     print("No existen citas registradas todavía. [*]: Cancelar operación")
-        #     break
-        # 3
-        try:
-            fecha_a_buscar = datetime.datetime.strptime(fecha_a_buscar, "%m/%d/%Y")
-        except Exception:
-            print('\nFecha inválida. Intenta de nuevo. [*]: Cancelar operación')
-            continue
-        
-        try:
-          with sqlite3.connect('Consultorio.db') as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT C.id_cita, P.nombre || ' ' || P.primer_apellido || ' ' || P.segundo_apellido, C.turno_cita \
-                            FROM Citas C \
-                            INNER JOIN Pacientes P \
-                            ON C.id_paciente = P.id_paciente \
-                            WHERE peso_kg = 'NA' AND fecha_cita = ?;", (fecha_a_buscar,))
-            citas_en_fecha = cursor.fetchall()     
-        except sqlite3.Error as e:
-          print(e)
-        except:
-            print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
-        finally:
-            if (conn):
-                conn.close()
-        # 4
-        if not citas_en_fecha:
-            print("\nNo hay citas programadas para la fecha ingresada o todas las citas ya han sido realizadas. [*]: Cancelar operación")
-            continue
-        # Impresión de citas encontradas en la fecha ingresada
-        print("\nCitas encontradas para la fecha", fecha_a_buscar.strftime('%m/%d/%Y') + ":")
-        print("{:^10} {:^30} {:^10}".format("Folio","Nombre_completo", "Turno"))
-        for id_cita, nombre_completo, turno in citas_en_fecha:
-            print("{:^10} {:^30} {:^10}".format(id_cita, nombre_completo, turno))
-            
-        # Folio cita
-        while True:
-          _folio_a_eliminar = input("Ingrese el folio de la cita a eliminar\n").strip()
-          if _folio_a_eliminar == '*':
-            return
-          # 1
-          if not _folio_a_eliminar:
-            print("\nOpción no se puede omitir. Inténtelo de nuevo. [*]: Cancelar operación")
-            continue
-          # 2
-          try:
-            folio_a_eliminar = int(_folio_a_eliminar)
-          except Exception:
-            print('\nEl valor debe ser de tipo entero. Intenta de nuevo. [*]: Cancelar operación')
-            continue
-          # 3
-          if folio_a_eliminar not in [id_cita for id_cita, _, _ in citas_en_fecha]:
-            print("\nEl folio de cita a eliminar no existe en las citas desplegadas. [*]: Cancelar operación")
-            continue
+      # Fecha cita
+      fecha_a_buscar = input('Ingresa la fecha a buscar (mm/dd/yyyy)\n').strip()
+      if fecha_a_buscar.upper() == "*":
           break
-        
-        # Eliminación
+      # 1
+      if not fecha_a_buscar:
+          print("Opción no se puede omitir. Inténtelo de nuevo. [*]: Cancelar operación")
+          continue
+      # 2.1
+      try:
+          fecha_a_buscar = datetime.datetime.strptime(fecha_a_buscar, "%m/%d/%Y")
+      except Exception:
+          print('\nFecha inválida. Intenta de nuevo. [*]: Cancelar operación')
+          continue
+      # 2.2
+      try:
+        with sqlite3.connect('Consultorio.db') as conn:
+          cursor = conn.cursor()
+          cursor.execute("SELECT C.id_cita, P.nombre || ' ' || P.primer_apellido || ' ' || P.segundo_apellido, C.turno_cita \
+                          FROM Citas C \
+                          INNER JOIN Pacientes P \
+                          ON C.id_paciente = P.id_paciente \
+                          WHERE peso_kg = 'NA' AND fecha_cita = ?;", (fecha_a_buscar,))
+          citas_en_fecha = cursor.fetchall()     
+      except sqlite3.Error as e:
+        print(e)
+      except:
+          print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
+      finally:
+          if (conn):
+              conn.close()
+      # 3
+      if not citas_en_fecha:
+          print("\nNo hay citas pendientes para la fecha ingresada. [*]: Cancelar operación")
+          return
+      # Impresión de citas encontradas en la fecha ingresada
+      print("\nCitas encontradas para la fecha", fecha_a_buscar.strftime('%m/%d/%Y') + ":")
+      print("{:^10} {:^40} {:^10}".format("Folio","Nombre_completo", "Turno"))
+      for id_cita, nombre_completo, turno in citas_en_fecha:
+          print("{:^10} {:^40} {:^10}".format(id_cita, nombre_completo, turno))
+          
+      # Folio cita
+      while True:
+        _folio_a_eliminar = input("Ingrese el folio de la cita a eliminar\n").strip()
+        if _folio_a_eliminar == '*':
+          return
+        # 1
+        if not _folio_a_eliminar:
+          print("\nOpción no se puede omitir. Inténtelo de nuevo. [*]: Cancelar operación")
+          continue
+        # 2
         try:
-          with sqlite3.connect('Consultorio.db') as conn:
-            cursor = conn.cursor()
-            cursor.execute('DELETE FROM Citas WHERE id_cita = ?;', (folio_a_eliminar,))
-            print(f'Se ha eliminado la cita {folio_a_eliminar}')
-        except sqlite3.Error as e:
-          print(e)
-        except:
-            print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
-        finally:
-            if (conn):
-                conn.close()
+          folio_a_eliminar = int(_folio_a_eliminar)
+        except Exception:
+          print('\nEl valor debe ser de tipo entero. Intenta de nuevo. [*]: Cancelar operación')
+          continue
+        # 3
+        if folio_a_eliminar not in [id_cita for id_cita, _, _ in citas_en_fecha]:
+          print("\nEl folio de cita a eliminar no existe en las citas desplegadas. [*]: Cancelar operación")
+          continue
+        break
+      break
+    
+    op_confirmacion = elegir_opcion('¿En verdad deseas cancelar la cita? S/N\n', 'SN')
+    if op_confirmacion == "S":  
+      # Eliminación
+      try:
+        with sqlite3.connect('Consultorio.db') as conn:
+          cursor = conn.cursor()
+          cursor.execute('DELETE FROM Citas WHERE id_cita = ?;', (folio_a_eliminar,))
+          print(f'Se ha eliminado la cita {folio_a_eliminar}')
+      except sqlite3.Error as e:
+        print(e)
+      except:
+          print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
+      finally:
+          if (conn):
+              conn.close()
+    else:
+      return
 
 # BÚSQUEDA POR PACIENTE
 def cancelacion_por_paciente():
-      pacientes_con_citas_pendientes = []
-
-      # Obtener la lista de pacientes con citas pendientes
-      for folio_paciente, datos_paciente in pacientes.items():
-          tiene_cita_pendiente = False
-          for id_cita, datos_cita in citas.items():
-              if datos_cita[0] == folio_paciente and id_cita not in citas_realizadas:
-                  tiene_cita_pendiente = True
-                  break
-          if tiene_cita_pendiente:
-              pacientes_con_citas_pendientes.append((folio_paciente, datos_paciente))
-
+      try:
+        with sqlite3.connect('Consultorio.db') as conn:
+          cursor = conn.cursor()
+          cursor.execute("SELECT P.id_paciente, P.nombre || ' ' || P.primer_apellido || ' ' || P.segundo_apellido \
+                          FROM Citas C \
+                          INNER JOIN Pacientes P \
+                          ON C.id_paciente = P.id_paciente \
+                          WHERE C.peso_kg = 'NA';")
+          pacientes_citas_pendientes = cursor.fetchall()     
+      except sqlite3.Error as e:
+        print(e)
+      except:
+          print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
+      finally:
+          if (conn):
+              conn.close()
+              
       # Mostrar la lista de pacientes con citas pendientes
-      if pacientes_con_citas_pendientes:
+      if pacientes_citas_pendientes:
           print("Pacientes con citas pendientes:")
-          print("{:<10} {:<20} {:<20} {:<20}".format("Folio", "Nombre del Paciente", "Apellido Paterno", "Apellido Materno"))
-          for folio, datos_paciente in pacientes_con_citas_pendientes:
-              nombre = datos_paciente[2]
-              apellido_paterno = datos_paciente[0]
-              apellido_materno = datos_paciente[1]
-              print("{:^10} {:^20} {:^20} {:^20}".format(folio, nombre, apellido_paterno, apellido_materno))
+          print("{:^16} {:^40}".format("Clave_paciente", "Nombre_completo"))
+          for clave_paciente, nombre_completo in pacientes_citas_pendientes:
+              print("{:^16} {:^40}".format(clave_paciente, nombre_completo))
       else:
           print("No hay pacientes con citas pendientes.")
           return  # Salir si no hay pacientes con citas pendientes
 
       while True:
         # Capturar el folio del paciente seleccionado por el usuario
-        opcion = input("Ingresa el folio del paciente al cual deseas eliminar alguna cita\n").strip().upper()
-        if opcion == "*":
+        _clave_paciente = input("Ingresa la clave del paciente al cual deseas eliminar alguna cita\n").strip().upper()
+        if _clave_paciente == "*":
             break
         # 1
-        elif not opcion:
+        if not _clave_paciente:
             print("\nOpción no se puede omitir. [*]: Cancelar operación")
             continue
         # 2
         try:
-            folio_seleccionado = int(opcion)
+            clave_paciente = int(_clave_paciente)
         except Exception:
             print("\nOpción inválida. Solo se aceptan números enteros. [*]: Cancelar operación")
             continue
+        # 3
+        if clave_paciente not in [id_paciente for id_paciente, _ in pacientes_citas_pendientes]:
+            print("\nLa clave del paciente no existe en la lista de pacientes mostrada. [*]: Cancelar operación")
+            continue
 
-        # Verificar si el folio seleccionado existe y tiene una cita pendiente
-        cita_encontrada = False
-        encabezado = True
-        lista_folios_citas = []
-        for id_cita, datos_cita in citas.items():
-            if datos_cita[0] == folio_seleccionado and id_cita not in citas_realizadas:
-                if encabezado:
-                    print("{:^10} {:^20} {:^10}".format("Folio_cita", "Fecha", "Turno"))
-                    encabezado = False
-                print("{:^10} {:^20} {:^10}".format(id_cita, datos_cita[1], datos_cita[2]))
-                lista_folios_citas.append([id_cita])
-                cita_encontrada = True
-                
-        if not cita_encontrada:
+        # 4.1
+        try:
+          with sqlite3.connect('Consultorio.db') as conn:
+            conn.execute("PRAGMA foreign_keys=1")
+            cursor = conn.cursor()
+            # Obtención de todas las citas del paciente ingresado
+            cursor.execute("SELECT id_cita, fecha_cita, turno_cita FROM Citas \
+                            WHERE id_paciente = ? AND peso_kg = 'NA'", (clave_paciente,))
+            citas_encontradas = cursor.fetchall()
+        except sqlite3.Error as e:
+          print(e)
+        except:
+            print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
+        finally:
+            if (conn):
+                conn.close()
+        # 4.2
+        if not citas_encontradas:
           print('\nNo existen citas pendientes por eliminar del paciente')
           return
+        
+        # 4.3
+        print("{:^10} {:^20} {:^10}".format("Folio_cita", "Fecha_cita", "Turno"))
+        for id_cita, fecha_cita, turno_cita in citas_encontradas:
+          print("{:^10} {:^20} {:^10}".format(id_cita, str(fecha_cita), turno_cita))
+          
         
         while True:
           _folio_a_eliminar = input("Ingrese el folio de la cita a eliminar\n").strip()
@@ -765,37 +779,56 @@ def cancelacion_por_paciente():
             print('\nEl valor debe ser de tipo entero. Intenta de nuevo. [*]: Cancelar operación')
             continue
           # 3
-          if folio_a_eliminar not in lista_folios_citas:
-            print("\nEl folio de cita a eliminar no existe en las citas desplegadas. [*]: Cancelar operación")
+          if folio_a_eliminar not in [id_cita for id_cita,_ ,_ in citas_encontradas]:
+            print("\nEl folio a eliminar no existe en las citas desplegadas. [*]: Cancelar operación")
             continue
           break
-          
-        # Eliminación
-        del citas[folio_a_eliminar]
-        print("\nCita eliminada correctamente.")
         break
+          
+      op_confirmacion = elegir_opcion('¿En verdad deseas cancelar la cita? S/N\n', 'SN')
+      if op_confirmacion == "S":  
+        # Eliminación
+        try:
+          with sqlite3.connect('Consultorio.db') as conn:
+            cursor = conn.cursor()
+            cursor.execute('DELETE FROM Citas WHERE id_cita = ?;', (folio_a_eliminar,))
+            print(f'Se ha eliminado la cita {folio_a_eliminar}')
+        except sqlite3.Error as e:
+          print(e)
+        except:
+            print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
+        finally:
+            if (conn):
+                conn.close()
+      else:
+        return
 
 # CONSULTAS Y REPORTES
 def consultas_reportes():
   while True:
-    op_citas_pacientes = mostrar_menu({ 'A':'Reporte de citas', 
-                                        'B':'Reporte de pacientes', 
+    op_citas_pacientes_estadistico = mostrar_menu({ 'A':'Reporte de citas', 
+                                        'B':'Reporte de pacientes',
+                                        'C':'Estadísticos demográficos',
                                         'X':'Volver al menú anterior'})
     # REPORTE DE CITAS
-    if op_citas_pacientes == 'A':
+    if op_citas_pacientes_estadistico == 'A':
       # 1
       if not citas:
         print('\nNo existen citas registradas en el sistema.')
         continue
       menu_periodo_paciente()
-    if op_citas_pacientes == 'B':
+    # REPORTE DE PACIENTES
+    elif op_citas_pacientes_estadistico == 'B':
       # 1
       if not pacientes:
         print('\nNo hay pacientes registrados en el sistema.')
         continue
       menu_listado_busqueda_clave_apellidos()
+    # ESTADÍSTICOS DEMOGRÁFICOS
+    elif op_citas_pacientes_estadistico == 'C':
+      estadisticos_demograficos()
     # SALIDA
-    if op_citas_pacientes == 'X':
+    elif op_citas_pacientes_estadistico == 'X':
       break
 
 
@@ -1117,6 +1150,248 @@ def menu_listado_busqueda_clave_apellidos():
     # SALIR AL MENÚ ANTERIOR
     if op_listado_busqueda == 'X':
       break
+    
+    
+    
+def estadisticos_demograficos():
+  op_edad_sexo = mostrar_menu({ 'A':'Por edad', 
+                                'B':'Por sexo',
+                                'C':'Por edad y sexo',
+                                'X':'Volver al menú anterior'})
+  # POR EDAD
+  if op_edad_sexo == 'A':
+    # Edad inicial
+    while True:
+      _edad_inicial = input("Ingresa la edad inicial del rango\n").strip()
+      if _edad_inicial.upper() == '*':
+        return
+      # 1
+      if not _edad_inicial:
+        print("\nOpción no se puede omitir. Inténtelo de nuevo. [*]: Cancelar operación")
+        continue
+      # 2
+      try:
+        edad_inicial = int(_edad_inicial)
+      except Exception:
+        print('\nLa edad debe ser de dato numérico tipo entero. Intenta de nuevo. [*]: Cancelar operación')
+        continue
+      # 3
+      if edad_inicial <= 0:
+        print("\nLa edad no puede ser menor o igual a 0. Inténtelo de nuevo. [*]: Cancelar operación")
+        continue
+      break
+    
+    # Edad final
+    while True:
+      _edad_final = input("Ingresa la edad final del rango\n").strip()
+      if _edad_final.upper() == '*':
+        return
+      # 1
+      if not _edad_final:
+        print("\nOpción no se puede omitir. Inténtelo de nuevo. [*]: Cancelar operación")
+        continue
+      # 2
+      try:
+        edad_final = int(_edad_final)
+      except Exception:
+        print('\nLa edad debe ser de dato numérico tipo entero. Intenta de nuevo. [*]: Cancelar operación')
+        continue
+      # 3
+      if edad_final <= 0:
+        print("\nLa edad no puede ser menor o igual a 0. Inténtelo de nuevo. [*]: Cancelar operación")
+        continue
+      break
+    
+    # Rango de edad
+    edad_rango = (edad_inicial, edad_final)
+    
+    # Búsqueda de peso y estatura por rango de edad
+    try:
+      with sqlite3.connect('Consultorio.db',
+                            detect_types = sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as conn:
+        conn.execute("PRAGMA foreign_keys=1")
+        cursor = conn.cursor()
+        # peso_kg, estatura_cm 
+        cursor.execute("SELECT peso_kg, estatura_cm \
+                        FROM Citas \
+                        WHERE edad BETWEEN ? AND ?", (edad_rango))
+        peso_estatura_por_edad = cursor.fetchall()
+    except sqlite3.Error as e:
+      print(e)
+    except:
+        print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
+    finally:
+        if (conn):
+            conn.close()
+    
+    # Conversión texto a float
+    peso_estatura_por_edad = [(float(peso), float(estatura)) for peso, estatura in peso_estatura_por_edad]
+    
+    # Conversión a dataframe
+    df = pd.DataFrame(peso_estatura_por_edad, columns=['Peso', 'Estatura'])
+    # Análisis de datos
+    peso_estatura_medidas = df[['Peso', 'Estatura']].describe().loc[['count', 'mean', 'std', 'min', '50%']]
+
+    # Impresión
+    print(peso_estatura_medidas)
+
+
+  # POR SEXO
+  elif op_edad_sexo == 'B':
+    # Sexo
+    while True:
+      sexo = input('Ingresa el sexo \n[H] Hombre \n[M] Mujer\n').upper().strip()
+      if sexo == '*':
+        return
+      # 1
+      if not sexo:
+        print('\nOpción no se puede omitir.Intenta de nuevo. [*]: Cancelar operación')
+        continue
+      # 2
+      if not sexo.isalpha():
+        print('\nSolo ingresar caracteres alfabéticos. Intenta de nuevo. [*]: Cancelar operación')
+        continue
+      # 3
+      if sexo not in ['H', 'M']:
+        print('\nOpción inválida. Intenta de nuevo. [*]: Cancelar operación')
+        continue
+      break
+
+    # Búsqueda de peso y estatura por sexo
+    try:
+      with sqlite3.connect('Consultorio.db',
+                            detect_types = sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as conn:
+        conn.execute("PRAGMA foreign_keys=1")
+        cursor = conn.cursor()
+        # peso_kg, estatura_cm, Pacientes 
+        cursor.execute("SELECT peso_kg, estatura_cm \
+                        FROM Citas \
+                        WHERE peso_kg != 'NA' AND sexo IN ( \
+                        SELECT sexo \
+                        FROM Pacientes \
+                        WHERE sexo = ?)", (sexo,))
+        peso_estatura_por_sexo = cursor.fetchall()
+    except sqlite3.Error as e:
+      print(e)
+    except:
+        print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
+    finally:
+        if (conn):
+            conn.close()
+    
+    # Conversión texto a float
+    peso_estatura_por_sexo = [(float(peso), float(estatura)) for peso, estatura in peso_estatura_por_sexo]
+    
+    # Conversión a dataframe
+    df = pd.DataFrame(peso_estatura_por_sexo, columns=['Peso', 'Estatura'])
+    # Análisis de datos
+    peso_estatura_medidas = df[['Peso', 'Estatura']].describe().loc[['count', 'mean', 'std', 'min', '50%']]
+
+    # Impresión
+    print(peso_estatura_medidas)
+    
+    
+  # POR EDAD Y SEXO
+  elif op_edad_sexo == 'C':
+    # Edad inicial
+    while True:
+      _edad_inicial = input("Ingresa la edad inicial del rango\n").strip()
+      if _edad_inicial.upper() == '*':
+        return
+      # 1
+      if not _edad_inicial:
+        print("\nOpción no se puede omitir. Inténtelo de nuevo. [*]: Cancelar operación")
+        continue
+      # 2
+      try:
+        edad_inicial = int(_edad_inicial)
+      except Exception:
+        print('\nLa edad debe ser de dato numérico tipo entero. Intenta de nuevo. [*]: Cancelar operación')
+        continue
+      # 3
+      if edad_inicial <= 0:
+        print("\nLa edad no puede ser menor o igual a 0. Inténtelo de nuevo. [*]: Cancelar operación")
+        continue
+      break
+    
+    # Edad final
+    while True:
+      _edad_final = input("Ingresa la edad final del rango\n").strip()
+      if _edad_final.upper() == '*':
+        return
+      # 1
+      if not _edad_final:
+        print("\nOpción no se puede omitir. Inténtelo de nuevo. [*]: Cancelar operación")
+        continue
+      # 2
+      try:
+        edad_final = int(_edad_final)
+      except Exception:
+        print('\nLa edad debe ser de dato numérico tipo entero. Intenta de nuevo. [*]: Cancelar operación')
+        continue
+      # 3
+      if edad_final <= 0:
+        print("\nLa edad no puede ser menor o igual a 0. Inténtelo de nuevo. [*]: Cancelar operación")
+        continue
+      break
+    
+    # Sexo
+    while True:
+      sexo = input('Ingresa el sexo \n[H] Hombre \n[M] Mujer\n').upper().strip()
+      if sexo == '*':
+        return
+      # 1
+      if not sexo:
+        print('\nOpción no se puede omitir.Intenta de nuevo. [*]: Cancelar operación')
+        continue
+      # 2
+      if not sexo.isalpha():
+        print('\nSolo ingresar caracteres alfabéticos. Intenta de nuevo. [*]: Cancelar operación')
+        continue
+      # 3
+      if sexo not in ['H', 'M']:
+        print('\nOpción inválida. Intenta de nuevo. [*]: Cancelar operación')
+        continue
+      break
+
+    # Rango de edad
+    edad_sexo_tupla = (edad_inicial, edad_final, sexo)
+    
+    # Búsqueda de peso y estatura por sexo
+    try:
+      with sqlite3.connect('Consultorio.db',
+                            detect_types = sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as conn:
+        conn.execute("PRAGMA foreign_keys=1")
+        cursor = conn.cursor()
+        # peso_kg, estatura_cm, Pacientes 
+        cursor.execute("SELECT C.peso_kg, C.estatura_cm \
+                        FROM Citas C \
+                        INNER JOIN Pacientes P \
+                        ON C.id_paciente = P.id_paciente \
+                        WHERE C.edad BETWEEN ? AND ? \
+                        AND P.sexo = ?)", (edad_sexo_tupla,))
+        peso_estatura_por_edad_sexo = cursor.fetchall()
+    except sqlite3.Error as e:
+      print(e)
+    except:
+        print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
+    finally:
+        if (conn):
+            conn.close()
+            
+            
+    # Conversión texto a float
+    peso_estatura_por_edad_sexo = [(float(peso), float(estatura)) for peso, estatura in peso_estatura_por_edad_sexo]
+    
+    # Conversión a dataframe
+    df = pd.DataFrame(peso_estatura_por_edad_sexo, columns=['Peso', 'Estatura'])
+    # Análisis de datos
+    peso_estatura_medidas = df[['Peso', 'Estatura']].describe().loc[['count', 'mean', 'std', 'min', '50%']]
+
+    # Impresión
+    print(peso_estatura_medidas)
+
+
 
 def guardar_csv(diccionario:dict, encabezados, nombre_archivo):
   with open(nombre_archivo, 'w', encoding='latin1', newline='') as archivo:
@@ -1126,62 +1401,26 @@ def guardar_csv(diccionario:dict, encabezados, nombre_archivo):
         grabador.writerows([[clave] + [dato for dato in datos]])
 
 
-def leer_csv(nombre_archivo):
-    datos = {}
-    try:
-      with open(nombre_archivo, 'r', encoding='latin1', newline='') as archivo:
-        lector = csv.reader(archivo)
-        next(lector)
-        for renglon in lector:
-          # datos[renglon[0]] = [renglon[i] for i in range(1, len(renglon))]
-          datos[int(renglon[0])] = [int(renglon[1]) if renglon[1].isdigit() else dato for dato in renglon[1:]]
-    except FileNotFoundError:
-        print(f"El archivo {nombre_archivo} no se encontró, se procede a trabajar con un conjunto vacío")
-        return dict()
-    except csv.Error as fallo_csv:
-        print(f"Ocurrió un error al leer el archivo: {fallo_csv}")
-    except Exception:
-        Excepcion = sys.exc_info()
-        print(f"Ocurrió un problema del tipo: {Excepcion[0]}")
-        print(f"Mensaje del error: {Excepcion[1]}")
-    else:
-        return datos
-
-# def crear_bd():
-#   try:
-#     with sqlite3.connect('Consultorio.bd') as conn:
-#       cursor = conn.cursor()
-#       # Pacientes
-#       cursor.execute('CREATE TABLE IF NOT EXISTS Pacientes (\
-#         id_paciente INTEGER PRIMARY KEY, \
-#         primer_apellido TEXT NOT NULL, \
-#         segundo_apellido TEXT NOT NULL, \
-#         nombre TEXT NOT NULL, \
-#         fecha_nacimiento TIMESTAMP NOT NULL, \
-#         sexo TEXT NOT NULL);')
-#       # Citas
-#       cursor.execute('CREATE TABLE IF NOT EXISTS Citas (\
-#         id_cita INTEGER PRIMARY KEY, \
-#         id_paciente TEXT NOT NULL, \
-#         fecha_cita TIMESTAMP NOT NULL, \
-#         turno_cita TEXT NOT NULL, \
-#         hora_llegada TEXT NOT NULL, \
-#         peso_kg TEXT NOT NULL, \
-#         estatura_cm TEXT NOT NULL, \
-#         presion_arterial TEXT NOT NULL, \
-#         diagnostico TEXT NOT NULL, \
-#         edad TEXT NOT NULL, \
-#         FOREIGN KEY(id_paciente) REFERENCES Pacientes(id_paciente));')
-#       print('Base de datos creada')
-#   except sqlite3.Error as e:
-#       print(e)
-#   except Exception:
-#       print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
-#   finally:
-#       if (conn):
-#           conn.close()
-#           print("Se ha cerrado la conexión")
-          
+# def leer_csv(nombre_archivo):
+#     datos = {}
+#     try:
+#       with open(nombre_archivo, 'r', encoding='latin1', newline='') as archivo:
+#         lector = csv.reader(archivo)
+#         next(lector)
+#         for renglon in lector:
+#           # datos[renglon[0]] = [renglon[i] for i in range(1, len(renglon))]
+#           datos[int(renglon[0])] = [int(renglon[1]) if renglon[1].isdigit() else dato for dato in renglon[1:]]
+#     except FileNotFoundError:
+#         print(f"El archivo {nombre_archivo} no se encontró, se procede a trabajar con un conjunto vacío")
+#         return dict()
+#     except csv.Error as fallo_csv:
+#         print(f"Ocurrió un error al leer el archivo: {fallo_csv}")
+#     except Exception:
+#         Excepcion = sys.exc_info()
+#         print(f"Ocurrió un problema del tipo: {Excepcion[0]}")
+#         print(f"Mensaje del error: {Excepcion[1]}")
+#     else:
+#         return datos
 
 # PROGRAMA PRINCIPAL
 # Lecturas
