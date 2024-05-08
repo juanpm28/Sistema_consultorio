@@ -4,7 +4,6 @@ import csv
 import sys
 import sqlite3
 import pandas as pd
-from openpyxl import Workbook
 
 # Estructura de datos --------------------------------------------------------------------------------------------------------------
 
@@ -28,6 +27,12 @@ menu_principal = {
     'X':'Salir del sistema'
 }
 
+def exportar(nombre, datos):
+  op_export = mostrar_menu({'A':'Excel', 'B':'CSV', 'X':'No exportar'}, '¿Deseas exportar la información mostrada a un archivo de Excel o CSV?')
+  if op_export == 'A':
+    datos.to_excel(f'{nombre}.xlsx', index=False)
+  elif op_export == 'B':
+    datos.to_csv(f'{nombre}.csv', index=False)
 
 def elegir_opcion(prompt='Elige la opción deseada',
                   opciones='ABCD'):
@@ -180,18 +185,33 @@ def citas_crear_realizar_cancelar_menu():
                                                       'B':'Realización de citas programadas', 
                                                       'C':'Cancelación de citas', 
                                                       'X':'Volver al menú anterior'})
+    
+    try:
+      with sqlite3.connect('Consultorio.db') as conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM Citas')
+        citas = cursor.fetchall()
+    except sqlite3.Error as e:
+      print(e)
+    except:
+        print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
+    finally:
+        if (conn):
+            conn.close()
+    
+    
     # PROGRAMACIÓN DE CITAS
     if op_citas_crear_realizar_cancelar == 'A':
       crear_cita()
     if op_citas_crear_realizar_cancelar == 'B':
-      # if not citas:
-      #   print('\nDebe haber al menos una cita creada para poder realizarla.')
-      #   continue
+      if not citas:
+        print('\nDebe haber al menos una cita programada para poder realizarla.')
+        continue
       realizar_citas()
     if op_citas_crear_realizar_cancelar == 'C':
-      # if not citas:
-      #   print('\nDebe haber al menos una cita creada para poder cancelarla.')
-      #   continue
+      if not citas:
+        print('\nDebe haber al menos una cita creada para poder cancelarla.')
+        continue
       cancelar_cita_menu()
     # SALIDA
     if op_citas_crear_realizar_cancelar == 'X':
@@ -806,6 +826,25 @@ def cancelacion_por_paciente():
 
 # CONSULTAS Y REPORTES
 def consultas_reportes():
+  try:
+    with sqlite3.connect('Consultorio.db') as conn:
+      cursor = conn.cursor()
+      cursor.execute('SELECT * FROM Pacientes')
+      pacientes = cursor.fetchall()
+      cursor.execute('SELECT * FROM Citas')
+      citas = cursor.fetchall()
+      cursor.execute("SELECT * FROM Citas WHERE peso_kg != 'NA")
+      citas_realizadas = cursor.fetchall()
+
+  except sqlite3.Error as e:
+    print(e)
+  except:
+      print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
+  finally:
+      if (conn):
+          conn.close()
+    
+  
   while True:
     op_citas_pacientes_estadistico = mostrar_menu({ 'A':'Reporte de citas', 
                                         'B':'Reporte de pacientes',
@@ -814,19 +853,23 @@ def consultas_reportes():
     # REPORTE DE CITAS
     if op_citas_pacientes_estadistico == 'A':
       # 1
-      # if not citas:
-      #   print('\nNo existen citas registradas en el sistema.')
-      #   continue
+      if not citas:
+        print('\nNo existen citas registradas en el sistema.')
+        continue
       menu_periodo_paciente()
     # REPORTE DE PACIENTES
     elif op_citas_pacientes_estadistico == 'B':
       # 1
-      # if not pacientes:
-      #   print('\nNo hay pacientes registrados en el sistema.')
-      #   continue
+      if not pacientes:
+        print('\nNo hay pacientes registrados en el sistema.')
+        continue
       menu_listado_busqueda_clave_apellidos()
     # ESTADÍSTICOS DEMOGRÁFICOS
     elif op_citas_pacientes_estadistico == 'C':
+      # 1
+      if not citas_realizadas:
+        print('\nNo hay citas realizadas por analizar.')
+        continue
       estadisticos_demograficos()
     # SALIDA
     elif op_citas_pacientes_estadistico == 'X':
@@ -901,7 +944,7 @@ def menu_periodo_paciente():
                             FROM Pacientes P \
                             INNER JOIN Citas C \
                             ON P.id_paciente = C.id_paciente \
-                            WHERE fecha_cita BETWEEN ? AND ?", fechas, conn)
+                            WHERE fecha_cita BETWEEN ? AND ?", conn, params=fechas)
         except sqlite3.Error as e:
           print(e)
         except:
@@ -925,6 +968,9 @@ def menu_periodo_paciente():
           # Impresion
           print(f"{clave_paciente:^14} {primer_apellido:^14} {segundo_apellido:^14} {nombre:^20} {fecha_nacimiento.date().strftime('%m/%d/%Y'):^16}  {sexo:^7}  {id_cita:^15} {fecha_cita.date().strftime('%m/%d/%Y'):^13} {turno_cita:^10} {hora_llegada:^14} {peso_kg:^9} {estatura_cm:^12} {presion_arterial:^16}  {edad:^4} ")
         print('\n************************************************************************************************************')
+        
+        
+        exportar('reporte_citas_periodo', df_citas_encontradas)
         
         break
       
@@ -952,7 +998,7 @@ def menu_periodo_paciente():
             # peso_kg, estatura_cm 
             cursor.execute("SELECT * FROM Pacientes WHERE id_paciente = ?", (clave_paciente,))
             paciente_buscado = cursor.fetchone()
-            # df_citas_encontradas = pd.read_sql("SELECT * FROM Pacientes WHERE id_paciente = ?", (clave_paciente,), conn)
+            df_citas_encontradas = pd.read_sql("SELECT * FROM Pacientes WHERE id_paciente = ?", conn, params=(clave_paciente,))
             
             cursor.execute("SELECT id_cita, fecha_cita, turno_cita, hora_llegada, peso_kg, estatura_cm, presion_arterial, edad FROM Citas WHERE id_paciente = ?", (clave_paciente,))
             citas_encontradas = cursor.fetchall()
@@ -975,16 +1021,18 @@ def menu_periodo_paciente():
         
         # Impresión datos del paciente
         clave_paciente, primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo = paciente_buscado
-        print('\n**********************************************************************************')
+        print('\n******************************************************************************************************')
         print('Clave_paciente  1er_Apellido  2do_Apellido          Nombre         Fecha_nacimiento   Sexo')
         print(f"{clave_paciente:^14} {primer_apellido:^14} {segundo_apellido:^14} {nombre:^20} {fecha_nacimiento.date().strftime('%m/%d/%Y'):^16}  {sexo:^7}") 
-        print('\n**********************************************************************************')
+        print('\n******************************************************************************************************')
         
         # Impresión de citas posibles
         print('Folio_cita     Fecha_cita     Turno     Hora_llegada  Peso_kg   Estatura_cm  Presion_arterial  Edad ') 
         for cita in citas_encontradas:
           folio_cita, fecha_cita, turno_cita, hora_llegada, peso_kg, estatura_cm, presion_arterial, edad = cita
           print(f"{folio_cita:^11}   {fecha_cita.date().strftime('%m/%d/%Y'):^13} {turno_cita:^10} {hora_llegada:^14} {peso_kg:^9} {estatura_cm:^12} {presion_arterial:^16}  {edad:^4} ")
+
+        exportar('reporte_citas_paciente', )
         break
       
     # VOLVER AL MENÚ ANTERIOR
@@ -1006,7 +1054,7 @@ def menu_listado_busqueda_clave_apellidos():
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM Pacientes")
         pacientes = cursor.fetchall()  
-        df = pd.read_sql('SELECT * FROM Pacientes', conn) #Importante imprime nombre cols
+        df_pacientes = pd.read_sql('SELECT * FROM Pacientes', conn) #Importante imprime nombre cols
     except sqlite3.Error as e:
       print(e)
     except:
@@ -1023,7 +1071,6 @@ def menu_listado_busqueda_clave_apellidos():
         continue
       
       # Impresion de resultados
-      # print(df)
       print('\n********************************************************************************************')
       print(f'Información de los pacientes registrados')
       print('Clave_paciente  1er_Apellido  2do_Apellido          Nombre         Fecha_nacimiento   Sexo')
@@ -1031,14 +1078,10 @@ def menu_listado_busqueda_clave_apellidos():
           clave_paciente, primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo = paciente
           print(f"{clave_paciente:^14} {primer_apellido:^14} {segundo_apellido:^14} {nombre:^20} {fecha_nacimiento.date().strftime('%m/%d/%Y'):^16}  {sexo:^7}") 
       print('********************************************************************************************')
-
+      
       # Exportación
-      op_export = mostrar_menu({'A':'Excel', 'B':'CSV', 'X':'No exportar'}, '¿Deseas exportar la información mostrada a un archivo de Excel o CSV?')
-      if op_export == 'A':
-        df.to_excel('output.xlsx', index=False)
-      elif op_export == 'B':
-        df.to_csv('output.csv', index=False)
-        
+      exportar("listado_pacientes", df_pacientes)
+      
 
     # BÚSQUEDA POR CLAVE DE PACIENTE
     if op_listado_busqueda == 'B':
@@ -1058,7 +1101,7 @@ def menu_listado_busqueda_clave_apellidos():
           continue
         # 3
         if clave_paciente not in [id_paciente for id_paciente, _, _, _, _, _ in pacientes]:
-          print('\nEl paciente no está registrado. [*]: Cancelar operación')
+          print('\nEl paciente no está registrado.')
           break
         
         try:
@@ -1067,7 +1110,7 @@ def menu_listado_busqueda_clave_apellidos():
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM Pacientes WHERE id_paciente = ?", (clave_paciente,))
             paciente_buscado = cursor.fetchone()     
-            df_paciente_buscado = pd.read_sql('SELECT * FROM Pacientes WHERE id_paciente = ?', (clave_paciente,), conn)
+            df_paciente_buscado = pd.read_sql('SELECT * FROM Pacientes WHERE id_paciente = ?', conn, params=(clave_paciente,))
         except sqlite3.Error as e:
           print(e)
         except:
@@ -1084,12 +1127,8 @@ def menu_listado_busqueda_clave_apellidos():
         print('*****************************************************************************************************************')
         
         # Exportación
-        op_export = mostrar_menu({'A':'Excel', 'B':'CSV', 'X':'No exportar'}, '¿Deseas exportar la información mostrada a un archivo de Excel o CSV?')
-        if op_export == 'A':
-          df_paciente_buscado.to_excel('info_paciente.xlsx', index=False)
-        elif op_export == 'B':
-          df_paciente_buscado.to_csv('info_paciente.csv', index=False)
-        
+        exportar("busqueda_paciente_clave", df_paciente_buscado)
+
         # Expediente clínico ------------------------------------------------------------------------------------------------------------------------------------------------------
         op_expediente = elegir_opcion('\n¿Deseas consultar el expediente clínico del paciente? S/N\n', 'SN')
         if op_expediente == 'N':
@@ -1101,7 +1140,7 @@ def menu_listado_busqueda_clave_apellidos():
             cursor = conn.cursor()
             cursor.execute("SELECT id_cita, fecha_cita, turno_cita, hora_llegada, peso_kg, estatura_cm, presion_arterial, diagnostico, edad FROM Citas WHERE id_paciente = ?", (clave_paciente,))
             expediente = cursor.fetchall()     
-            df_citas_paciente_buscado = pd.read_sql('SELECT id_cita, fecha_cita, turno_cita, hora_llegada, peso_kg, estatura_cm, presion_arterial, diagnostico, edad FROM Citas WHERE id_paciente = ?', (clave_paciente,), conn)
+            # df_citas_paciente_buscado = pd.read_sql('SELECT id_cita, fecha_cita, turno_cita, hora_llegada, peso_kg, estatura_cm, presion_arterial, diagnostico, edad FROM Citas WHERE id_paciente = ?', conn, (clave_paciente,))
         except sqlite3.Error as e:
           print(e)
         except:
@@ -1110,7 +1149,7 @@ def menu_listado_busqueda_clave_apellidos():
             if (conn):
                 conn.close()
                 
-        # Impresión de las citas posibles
+        # Impresión de las citas realizadas
         print('\n******************************************************************************************************************************************')
         print('Folio_cita     Fecha_cita     Turno     Hora_llegada  Peso_kg   Estatura_cm  Presion_arterial   Edad           Diagnóstico         ') 
         for cita in expediente:
@@ -1121,14 +1160,6 @@ def menu_listado_busqueda_clave_apellidos():
           parrafo = f'\n{" "*107}'.join(renglones)
           print(f"{id_cita:^11}   {fecha_cita.date().strftime('%m/%d/%Y'):^13} {turno_cita:^10} {hora_llegada:^14} {peso_kg:^9} {estatura_cm:^12} {presion_arterial:^16}   {edad:^4}       {parrafo:^22}")
         print('******************************************************************************************************************************************')
-        
-        
-        # Exportación
-        op_export = mostrar_menu({'A':'Excel', 'B':'CSV', 'X':'No exportar'}, '¿Deseas exportar la información mostrada a un archivo de Excel o CSV?')
-        if op_export == 'A':
-          df_citas_paciente_buscado.to_excel('info_paciente.xlsx', index=False)
-        elif op_export == 'B':
-          df_citas_paciente_buscado.to_csv('info_paciente.csv', index=False)
         
         break
       
@@ -1193,7 +1224,7 @@ def menu_listado_busqueda_clave_apellidos():
             cursor.execute("SELECT * FROM Pacientes \
                             WHERE primer_apellido = ? AND segundo_apellido = ? AND nombre = ?;", (primer_apellido_u, segundo_apellido_u, nombre_u))
             paciente_buscado = cursor.fetchone()     
-            df_paciente_buscado = pd.read_sql("SELECT * FROM Pacientes WHERE primer_apellido = ? AND segundo_apellido = ? AND nombre = ?;", (primer_apellido_u, segundo_apellido_u, nombre_u), conn)
+            df_paciente_buscado = pd.read_sql("SELECT * FROM Pacientes WHERE primer_apellido = ? AND segundo_apellido = ? AND nombre = ?;", conn, params=(primer_apellido_u, segundo_apellido_u, nombre_u))
             
         except sqlite3.Error as e:
           print(e)
@@ -1202,7 +1233,6 @@ def menu_listado_busqueda_clave_apellidos():
         finally:
             if (conn):
                 conn.close()
-                
                 
         if not paciente_buscado:
           print('\nPaciente no encontrado.')
@@ -1214,6 +1244,9 @@ def menu_listado_busqueda_clave_apellidos():
         print('Clave_paciente  1er_Apellido  2do_Apellido          Nombre         Fecha_nacimiento   Sexo')
         print(f"{clave_paciente:^14} {primer_apellido:^14} {segundo_apellido:^14} {nombre:^20} {fecha_nacimiento.date().strftime('%m/%d/%Y'):^16}  {sexo:^7}") 
         print('**********************************************************************************')
+        
+        exportar("busqueda_paciente_nombre_apellidos", df_paciente_buscado)
+
         
         # Expediente clínico ------------------------------------------------------------------------------------------------------------------------------------------------------
         op_expediente = elegir_opcion('\n¿Deseas consultar el expediente clínico del paciente? S/N\n', 'SN')
@@ -1229,10 +1262,6 @@ def menu_listado_busqueda_clave_apellidos():
                             FROM Citas \
                             WHERE id_paciente = ? AND peso_kg != 'NA'", (clave_paciente,))
             expediente = cursor.fetchall()
-            df_citas_apellidos = pd.read_sql("SELECT id_cita, fecha_cita, turno_cita, hora_llegada, peso_kg, estatura_cm, presion_arterial, diagnostico, edad \
-                            FROM Citas \
-                            WHERE id_paciente = ? AND peso_kg != 'NA'", (clave_paciente,), conn)
-        except sqlite3.Error as e:
           print(e)
         except:
             print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
@@ -1251,14 +1280,6 @@ def menu_listado_busqueda_clave_apellidos():
           parrafo = f'\n{" "*107}'.join(renglones)
           print(f"{folio_cita:^11}   {fecha_cita.date().strftime('%m/%d/%Y'):^13} {turno_cita:^10} {hora_llegada:^14} {peso_kg:^9} {estatura_cm:^12} {presion_arterial:^16}   {edad:^4}       {parrafo:^22}")
         print('******************************************************************************************************************************************')
-        
-        # Exportación
-        op_export = mostrar_menu({'A':'Excel', 'B':'CSV', 'X':'No exportar'}, '¿Deseas exportar la información mostrada a un archivo de Excel o CSV?')
-        if op_export == 'A':
-          df_citas_apellidos.to_excel('info_paciente.xlsx', index=False)
-        elif op_export == 'B':
-          df_citas_apellidos.to_csv('info_paciente.csv', index=False)
-          
           
       # ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # SALIR AL MENÚ ANTERIOR
@@ -1565,74 +1586,38 @@ def estadisticos_demograficos():
       break
 
 
-
-def guardar_csv(diccionario:dict, encabezados, nombre_archivo):
-  with open(nombre_archivo, 'w', encoding='latin1', newline='') as archivo:
-    grabador = csv.writer(archivo)
-    grabador.writerow(encabezados)
-    for clave, datos in diccionario.items():
-        grabador.writerows([[clave] + [dato for dato in datos]])
-
-
-# def leer_csv(nombre_archivo):
-#     datos = {}
-#     try:
-#       with open(nombre_archivo, 'r', encoding='latin1', newline='') as archivo:
-#         lector = csv.reader(archivo)
-#         next(lector)
-#         for renglon in lector:
-#           # datos[renglon[0]] = [renglon[i] for i in range(1, len(renglon))]
-#           datos[int(renglon[0])] = [int(renglon[1]) if renglon[1].isdigit() else dato for dato in renglon[1:]]
-#     except FileNotFoundError:
-#         print(f"El archivo {nombre_archivo} no se encontró, se procede a trabajar con un conjunto vacío")
-#         return dict()
-#     except csv.Error as fallo_csv:
-#         print(f"Ocurrió un error al leer el archivo: {fallo_csv}")
-#     except Exception:
-#         Excepcion = sys.exc_info()
-#         print(f"Ocurrió un problema del tipo: {Excepcion[0]}")
-#         print(f"Mensaje del error: {Excepcion[1]}")
-#     else:
-#         return datos
-
-# PROGRAMA PRINCIPAL
-# Lecturas
-# pacientes = leer_csv('pacientes.csv')
-# if pacientes:
-#   print('Datos cargados de pacientes.csv ...')
-
-# citas = leer_csv('citas.csv')
-# if citas:
-#   print('Datos cargados de citas.csv ...')
-
-# citas_realizadas = leer_csv('citas_realizadas.csv')
-# if citas_realizadas:
-#   print('Datos cargados de citas_realizadas.csv ...')
+# Programa principal
+try:
+  with sqlite3.connect('Consultorio.db') as conn:
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM Pacientes')
+    pacientes = cursor.fetchall()
+    cursor.execute('SELECT * FROM Citas')
+    citas = cursor.fetchall()
+except sqlite3.Error as e:
+  print(e)
+except:
+    print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
+finally:
+    if (conn):
+        conn.close()
   
+
 while True:
   op_principal = mostrar_menu(menu_principal, '\nSistema de gestión de pacientes de un consultorio')
   match op_principal:
     case 'A':
       registro_pacientes()
     case 'B':
+      if not pacientes:
+        print('\nDebe haber al menos un paciente registrado para entrar al menú de citas.')
+        continue
       citas_crear_realizar_cancelar_menu()
-      # if not pacientes:
-      #   print('\nDebe haber al menos un paciente registrado para entrar al menú de citas.')
-      # else:
-      #   citas_crear_realizar_cancelar()
     case 'C':
       consultas_reportes()
     case 'X':
       op_salida = elegir_opcion('¿En verdad deseas salir del sistema? S/N\n', 'SN')
-      if op_salida == "S":  
-        # Guardados (diccionario, encabezados, nombre_archivo)
-        if pacientes:
-          guardar_csv(pacientes, ('Clave_paciente', 'Primer_apellido', 'Segundo_apellido', 'Nombre', 'Nacimiento', 'Sexo'), 'pacientes.csv')
-        if citas:
-          guardar_csv(citas, ('Folio_cita', 'Clave_paciente', 'Fecha_cita', 'Turno'), 'citas.csv')
-        if citas_realizadas:
-          guardar_csv(citas_realizadas, ('Folio_cita', 'Clave_paciente', 'Hora_llegada', 'Peso (kg)', 'Estatura (cm)', 'Presion_arterial', 'Diagnostico', 'Edad'), 'citas_realizadas.csv')
-        
+      if op_salida == "S":
         print('Fin del programa.')
         break
     case _:
