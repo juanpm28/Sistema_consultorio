@@ -68,7 +68,7 @@ def validar_nombre(prompt,
   while True: 
     nombre = input(prompt).title().strip()
     if nombre == '*':
-        return 
+        return nombre
 
     elif not nombre and omision == True:
         nombre = ''
@@ -89,8 +89,14 @@ def registro_pacientes():
   while True:
     # Primer apellido
     primer_apellido = validar_nombre('Ingresa el primer apellido \n')
+    if primer_apellido == '*':
+      return 
     segundo_apellido = validar_nombre('Ingresa el segundo apellido \n', True)
+    if segundo_apellido == '*':
+      return
     nombre = validar_nombre('Ingresa el nombre \n') 
+    if nombre == '*':
+      return
     
     while True:
       # Fecha de nacimiento
