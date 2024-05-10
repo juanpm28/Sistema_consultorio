@@ -232,6 +232,8 @@ def crear_cita():
       clave_paciente = int(clave_paciente)
       primer_apellido = str(primer_apellido)
       segundo_apellido = str(segundo_apellido)
+      if segundo_apellido == 'None':
+        segundo_apellido = " "
       nombre = str(nombre)
 
       datos_paciente.append([clave_paciente, primer_apellido, segundo_apellido, nombre])
@@ -322,7 +324,7 @@ def crear_cita():
         return
       # 1
       if not _turno_cita:
-        print("\nOpción no se puede omitir. Inténtelo de nuevo o utilice [*]: Cancelar operación")
+        print("\nEl turno no se puede omitir. Inténtelo de nuevo o utilice [*]: Cancelar operación")
         continue
       # 2
       try:
@@ -659,7 +661,7 @@ def eliminar_por_fecha():
         with sqlite3.connect('Consultorio.db', 
                               detect_types = sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as conn:
           cursor = conn.cursor()
-          cursor.execute("SELECT C.id_cita, P.nombre || ' ' || P.primer_apellido || ' ' || P.segundo_apellido, C.turno_cita \
+          cursor.execute("SELECT C.id_cita, P.nombre, P.primer_apellido, P.segundo_apellido, C.turno_cita \
                           FROM Citas C \
                           INNER JOIN Pacientes P \
                           ON C.id_paciente = P.id_paciente \
@@ -678,7 +680,7 @@ def eliminar_por_fecha():
           return  
       # Impresión de citas encontradas en la fecha ingresada
       print("\nCitas encontradas para la fecha", fecha_a_buscar.strftime('%m/%d/%Y') + ":")
-      encabezados = ["Folio","Nombre_completo", "Turno"]
+      encabezados = ["Folio","Nombre", "Primer apellido", "Segundo apellido", "Turno"]
       print(tabulate((citas_en_fecha), headers = encabezados, tablefmt="rounded_grid", rowalign="center"))
           
       # Folio cita
@@ -697,7 +699,7 @@ def eliminar_por_fecha():
           print('\nEl folio debe ser de tipo entero. Inténtelo de nuevo o utilice [*]: Cancelar operación')
           continue
         # 3
-        if folio_a_eliminar not in [id_cita for id_cita, _, _ in citas_en_fecha]:
+        if folio_a_eliminar not in [id_cita for id_cita, _, _, _, _ in citas_en_fecha]:
           print("\nEl folio de cita a eliminar no existe en las citas desplegadas. Inténtelo de nuevo o utilice [*]: Cancelar operación")
           continue
         break
@@ -726,7 +728,7 @@ def cancelacion_por_paciente():
       try:
         with sqlite3.connect('Consultorio.db') as conn:
           cursor = conn.cursor()
-          cursor.execute("SELECT P.id_paciente, P.nombre || ' ' || P.primer_apellido || ' ' || P.segundo_apellido \
+          cursor.execute("SELECT DISTINCT(P.id_paciente), P.nombre, P.primer_apellido, P.segundo_apellido \
                           FROM Citas C \
                           INNER JOIN Pacientes P \
                           ON C.id_paciente = P.id_paciente \
@@ -743,7 +745,7 @@ def cancelacion_por_paciente():
       # Mostrar la lista de pacientes con citas pendientes
       if pacientes_citas_pendientes:
           print("Pacientes con citas pendientes:")
-          encabezados = ["Clave_paciente", "Nombre_completo"]
+          encabezados = ["Clave_paciente", "Nombre", "Primer apellido", "Segundo apellido" ]
           print(tabulate((pacientes_citas_pendientes), headers = encabezados, tablefmt="rounded_grid", rowalign="center"))
 
       else:
@@ -766,7 +768,7 @@ def cancelacion_por_paciente():
             print("\nOpción inválida. Solo se aceptan números enteros. Inténtelo de nuevo o utilice [*]: Cancelar operación")
             continue
         # 3
-        if clave_paciente not in [id_paciente for id_paciente, _ in pacientes_citas_pendientes]:
+        if clave_paciente not in [id_paciente for id_paciente, _, _, _ in pacientes_citas_pendientes]:
             print("\nLa clave del paciente no existe en la lista de pacientes mostrada. Inténtelo de nuevo o utilice [*]: Cancelar operación")
             continue
 
@@ -791,12 +793,14 @@ def cancelacion_por_paciente():
         if not citas_encontradas:
           print('\nNo existen citas pendientes por eliminar del paciente')
           return
-        
-        # 4.3
+
+        for folio_cita, fecha_cita, turno in citas_encontradas:
+          fecha_cita = fecha_cita.date().strftime('%m/%d/%Y')
+          citas_encontradas[[folio_cita, fecha_cita, turno]]
+
         print('Citas encontradas: ')
         encabezados = ["Folio_cita", "Fecha_cita", "Turno"]
-        print(tabulate((citas_encontradas), headers = encabezados, tablefmt="rounded_grid", rowalign="center"))
-          
+        print(tabulate((citas_encontradas), headers = encabezados, tablefmt="rounded_grid", rowalign="center"))   
         
         while True:
           _folio_a_eliminar = input("Ingrese el folio de la cita a eliminar\n").strip()
@@ -970,13 +974,15 @@ def menu_periodo_paciente():
           print('\nNo existen citas para el periodo especificado.')
           break
         
-        # Extracción datos de citas realizadas
+        for clave_paciente, primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo, folio_cita, fecha_cita, turno, hora_llegada, peso_kg, estatura_cm, presion_arterial in citas_encontradas:
+          fecha_nacimiento = fecha_nacimiento.date().strftime('%m/%d/%Y')
+          citas_encontradas = [[clave_paciente, primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo, folio_cita, fecha_cita, turno, hora_llegada, peso_kg, estatura_cm, presion_arterial]]
+
         print(f'Reporte de citas entre {_fecha_inicial} y {_fecha_final}')
         encabezados = ['Clave_paciente', '1er_Apellido', '2do_Apellido', 'Nombre', 'Fecha_nacimiento', 'Sexo', 'Folio_cita', 'Fecha_cita', 'Turno', 'Hora_llegada', 'Peso_kg', 'Estatura_cm',  'Presion_arterial']
         print(tabulate(citas_encontradas, headers = encabezados, tablefmt="rounded_grid", rowalign="center"))
         
         exportar('reporte_citas_periodo', df_citas_encontradas)
-        
         break
       
     # REPORTE DE CITAS POR PACIENTE
@@ -1002,7 +1008,7 @@ def menu_periodo_paciente():
             cursor = conn.cursor()
             # peso_kg, estatura_cm 
             cursor.execute("SELECT * FROM Pacientes WHERE id_paciente = ?", (clave_paciente,))
-            paciente_buscado = cursor.fetchone()
+            paciente_buscado = cursor.fetchall()
             
             cursor.execute("SELECT id_cita, fecha_cita, turno_cita, hora_llegada, peso_kg, estatura_cm, presion_arterial FROM Citas WHERE id_paciente = ?", (clave_paciente,))
             citas_encontradas = cursor.fetchall()
@@ -1015,7 +1021,7 @@ def menu_periodo_paciente():
         finally:
             if (conn):
                 conn.close()
-        
+
         if not paciente_buscado:
           print('\nEl paciente no está registrado. Inténtelo de nuevo o utilice [*]: Cancelar operación')
           continue
@@ -1023,18 +1029,25 @@ def menu_periodo_paciente():
         if not citas_encontradas:
           print('\nNo existen citas registradas para el paciente.')
           break
+
+        for clave_paciente, primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo in paciente_buscado:
+          fecha_nacimiento = fecha_nacimiento.date().strftime('%m/%d/%Y')
+          paciente_buscado = [[clave_paciente, primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo]]
         
-        # Impresión datos del paciente
+        print('Datos del paciente:')
         encabezados = ['Clave_paciente',  '1er_Apellido',  '2do_Apellido', 'Nombre', 'Fecha_nacimiento', 'Sexo']
-        sexo = paciente_buscado
         print(tabulate((paciente_buscado), headers= encabezados, tablefmt="rounded_grid", rowalign="center"))
         
-        # Impresión de citas posibles
+        for folio_cita, fecha_cita, turno, hora_llegada, peso_kg, estatura_cm, presion_arterial in citas_encontradas:
+          fecha_cita = fecha_cita.date().strftime('%m/%d/%Y')
+          citas_encontradas = [[folio_cita, fecha_cita, turno, hora_llegada, peso_kg, estatura_cm, presion_arterial]]
+
+        print('Citas del paciente: ')
         encabezados = ['Folio_cita', 'Fecha_cita', 'Turno', 'Hora_llegada', 'Peso_kg', 'Estatura_cm', 'Presion_arterial']
         print(tabulate((citas_encontradas), headers= encabezados, tablefmt="rounded_grid", rowalign="center"))
 
         # Exportación
-        exportar(f'citas_{paciente_buscado[3]}_{paciente_buscado[1]}', df_citas_encontradas)
+        exportar(f'citas_', df_citas_encontradas)
         break
       
     # VOLVER AL MENÚ ANTERIOR
@@ -1071,7 +1084,10 @@ def menu_listado_busqueda_clave_apellidos():
         print('\nNo hay pacientes registrados en el sistema.')
         continue
       
-      # Impresion de resultados
+      for clave_paciente, primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo in pacientes:
+        fecha_nacimiento = fecha_nacimiento.date().strftime('%m/%d/%Y')
+        pacientes = [[clave_paciente, primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo]]
+
       print(f'Información de los pacientes registrados')
       encabezados = ['Clave_paciente', '1er_Apellido', '2do_Apellido',  'Nombre', 'Fecha_nacimiento', 'Sexo']
       print(tabulate((pacientes), headers= encabezados, tablefmt = "rounded_grid", rowalign="center"))
@@ -1115,6 +1131,10 @@ def menu_listado_busqueda_clave_apellidos():
         finally:
             if (conn):
                 conn.close()
+
+        for clave_paciente, primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo in paciente_buscado:
+          fecha_nacimiento = fecha_nacimiento.date().strftime('%m/%d/%Y')
+          paciente_buscado = [[clave_paciente, primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo]]
         
         encabezados = ['Clave_paciente',  '1er_Apellido',  '2do_Apellido', 'Nombre', 'Fecha_nacimiento', 'Sexo']
         print(tabulate((paciente_buscado), headers= encabezados, tablefmt="rounded_grid", rowalign="center"))
@@ -1144,8 +1164,11 @@ def menu_listado_busqueda_clave_apellidos():
         if not expediente:
           print('\nNo hay citas registradas para el paciente')
           break
-        
-        # Impresión de las citas realizadas
+
+        for folio_cita, fecha_cita, turno, hora_llegada, peso_kg, estatura_cm, presion_arterial, diagnostico in expediente:
+          fecha_cita = fecha_cita.date().strftime('%m/%d/%Y')
+          expediente = [[folio_cita, fecha_cita, turno, hora_llegada, peso_kg, estatura_cm, presion_arterial, diagnostico]]
+
         print('Diagnostico del paciente: ')
         encabezados = ['id_cita', 'fecha_cita', 'turno_cita', 'hora_llegada', 'peso_kg', 'estatura_cm', 'presion_arterial', 'diagnostico']
         print(tabulate((expediente), headers = encabezados, tablefmt="rounded_grid", rowalign="center"))
@@ -1226,7 +1249,11 @@ def menu_listado_busqueda_clave_apellidos():
         if not paciente_buscado:
           print('\nPaciente no encontrado.')
           break
-        
+
+        for clave_paciente, primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo in paciente_buscado:
+          fecha_nacimiento = fecha_nacimiento.date().strftime('%m/%d/%Y')
+          paciente_buscado = [[clave_paciente, primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo]]
+
         encabezados = ('Clave_paciente', '1er_Apellido', '2do_Apellido', 'Nombre', 'Fecha_nacimiento', 'Sexo')
         print(tabulate((paciente_buscado), headers = encabezados, tablefmt="rounded_grid", rowalign="center"))
 
@@ -1253,7 +1280,11 @@ def menu_listado_busqueda_clave_apellidos():
         finally:
             if (conn):
                 conn.close()
-                
+
+        for folio_cita, fecha_cita, turno, hora_llegada, peso_kg, estatura_cm, presion_arterial, diagnostico in expediente:
+          fecha_cita = fecha_cita.date().strftime('%m/%d/%Y')
+          expediente = [[folio_cita, fecha_cita, turno, hora_llegada, peso_kg, estatura_cm, presion_arterial, diagnostico]]
+
         encabezados = ('Folio_cita', 'Fecha_cita', 'Turno', 'Hora_llegada', 'Peso_kg', 'Estatura_cm', 'Presion_arterial', 'Diagnóstico')
         print(tabulate((expediente), headers = encabezados, tablefmt="rounded_grid", rowalign="center"))
 
