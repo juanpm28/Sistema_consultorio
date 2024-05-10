@@ -881,13 +881,15 @@ def menu_periodo_paciente():
                                 detect_types = sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as conn:
             conn.execute("PRAGMA foreign_keys=1")
             cursor = conn.cursor()
-            cursor.execute("SELECT P.id_paciente, P.primer_apellido, P.segundo_apellido, P.nombre, P.fecha_nacimiento, P.sexo, C.id_cita, C.fecha_cita, C.turno_cita, C.hora_llegada, C.peso_kg, C.estatura_cm, C.presion_arterial \
+            cursor.execute("SELECT P.id_paciente, P.primer_apellido, P.segundo_apellido, P.nombre, P.fecha_nacimiento, P.sexo, \
+                            C.id_cita, C.fecha_cita, C.turno_cita, C.hora_llegada, C.peso_kg, C.estatura_cm, C.presion_arterial \
                             FROM Pacientes P \
                             INNER JOIN Citas C \
                             ON P.id_paciente = C.id_paciente \
                             WHERE fecha_cita BETWEEN ? AND ?", fechas)
             citas_encontradas = cursor.fetchall()
-            df_citas_encontradas = pd.read_sql("SELECT P.id_paciente, P.primer_apellido, P.segundo_apellido, P.nombre, P.fecha_nacimiento, P.sexo, C.id_cita, C.fecha_cita, C.turno_cita, C.hora_llegada, C.peso_kg, C.estatura_cm, C.presion_arterial \
+            df_citas_encontradas = pd.read_sql("SELECT P.id_paciente, P.primer_apellido, P.segundo_apellido, P.nombre, P.fecha_nacimiento, \
+                                               P.sexo, C.id_cita, C.fecha_cita, C.turno_cita, C.hora_llegada, C.peso_kg, C.estatura_cm, C.presion_arterial \
                             FROM Pacientes P \
                             INNER JOIN Citas C \
                             ON P.id_paciente = C.id_paciente \
@@ -904,12 +906,15 @@ def menu_periodo_paciente():
           print('\nNo existen citas para el periodo especificado.')
           break
         
-        for clave_paciente, primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo, folio_cita, fecha_cita, turno, hora_llegada, peso_kg, estatura_cm, presion_arterial in citas_encontradas:
+        for clave_paciente, primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo, folio_cita, fecha_cita, turno, hora_llegada, \
+          peso_kg, estatura_cm, presion_arterial in citas_encontradas:
           fecha_nacimiento = fecha_nacimiento.date().strftime('%m/%d/%Y')
-          citas_encontradas = [[clave_paciente, primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo, folio_cita, fecha_cita, turno, hora_llegada, peso_kg, estatura_cm, presion_arterial]]
+          citas_encontradas = [[clave_paciente, primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo, folio_cita, fecha_cita, turno, 
+                                hora_llegada, peso_kg, estatura_cm, presion_arterial]]
 
         print(f'Reporte de citas entre {_fecha_inicial} y {_fecha_final}')
-        encabezados = ['Clave_paciente', '1er_Apellido', '2do_Apellido', 'Nombre', 'Fecha_nacimiento', 'Sexo', 'Folio_cita', 'Fecha_cita', 'Turno', 'Hora_llegada', 'Peso_kg', 'Estatura_cm',  'Presion_arterial']
+        encabezados = ['Clave_paciente', '1er_Apellido', '2do_Apellido', 'Nombre', 'Fecha_nacimiento', 'Sexo', 'Folio_cita', 'Fecha_cita', \
+                       'Turno', 'Hora_llegada', 'Peso_kg', 'Estatura_cm',  'Presion_arterial']
         print(tabulate(citas_encontradas, headers = encabezados, tablefmt="rounded_grid", rowalign="center"))
         
         exportar('reporte_citas_periodo', df_citas_encontradas)
@@ -940,7 +945,8 @@ def menu_periodo_paciente():
             
             cursor.execute("SELECT id_cita, fecha_cita, turno_cita, hora_llegada, peso_kg, estatura_cm, presion_arterial FROM Citas WHERE id_paciente = ?", (clave_paciente,))
             citas_encontradas = cursor.fetchall()
-            df_citas_encontradas = pd.read_sql("SELECT id_cita, fecha_cita, turno_cita, hora_llegada, peso_kg, estatura_cm, presion_arterial FROM Citas WHERE id_paciente = ?", conn, params=(clave_paciente,))
+            df_citas_encontradas = pd.read_sql("SELECT id_cita, fecha_cita, turno_cita, hora_llegada, peso_kg, estatura_cm, presion_arterial \
+                                               FROM Citas WHERE id_paciente = ?", conn, params=(clave_paciente,))
 
         except sqlite3.Error as e:
           print(e)
@@ -1070,7 +1076,8 @@ def menu_listado_busqueda_clave_apellidos():
           with sqlite3.connect('Consultorio.db',
                                 detect_types = sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT id_cita, fecha_cita, turno_cita, hora_llegada, peso_kg, estatura_cm, presion_arterial, diagnostico FROM Citas WHERE id_paciente = ?", (clave_paciente,))
+            cursor.execute("SELECT id_cita, fecha_cita, turno_cita, hora_llegada, peso_kg, estatura_cm, presion_arterial, diagnostico \
+                           FROM Citas WHERE id_paciente = ?", (clave_paciente,))
             expediente = cursor.fetchall()     
         except sqlite3.Error as e:
           print(e)
@@ -1153,7 +1160,9 @@ def menu_listado_busqueda_clave_apellidos():
             cursor.execute("SELECT * FROM Pacientes \
                             WHERE primer_apellido = ? AND segundo_apellido = ? AND nombre = ?;", (primer_apellido_u, segundo_apellido_u, nombre_u))
             paciente_buscado = cursor.fetchall()     
-            df_paciente_buscado = pd.read_sql("SELECT * FROM Pacientes WHERE primer_apellido = ? AND segundo_apellido = ? AND nombre = ?;", conn, params=(primer_apellido_u, segundo_apellido_u, nombre_u))
+            df_paciente_buscado = pd.read_sql("SELECT * FROM Pacientes \
+                                              WHERE primer_apellido = ? AND segundo_apellido = ? \
+                                              AND nombre = ?;", conn, params=(primer_apellido_u, segundo_apellido_u, nombre_u))
             
         except sqlite3.Error as e:
           print(e)
@@ -1307,7 +1316,8 @@ def estadisticos_demograficos():
           break
         
         peso_estatura_presion_edad_medidas = datos_filtrados[['Peso', 'Estatura', 'Sistolica', 'Diastolica']].describe().loc[['count', 'min', 'max', 'mean', '50%', 'std']]
-        peso_estatura_presion_edad_medidas = peso_estatura_presion_edad_medidas.rename(index={'count': 'Conteo', 'min': 'Mínimo', 'max': 'Máximo', 'mean': 'Media', '50%': 'Mediana', 'std': 'Desviación estándar'})
+        peso_estatura_presion_edad_medidas = peso_estatura_presion_edad_medidas.rename(index={'count': 'Conteo', 'min': 'Mínimo', 'max': 'Máximo', 
+                                                                                              'mean': 'Media', '50%': 'Mediana', 'std': 'Desviación estándar'})
         print(peso_estatura_presion_edad_medidas.round(2))
 
         exportar('estadisticos_demograficos_edad', datos_filtrados[['Peso', 'Estatura', 'Sistolica', 'Diastolica']])
@@ -1386,7 +1396,8 @@ def estadisticos_demograficos():
       df = pd.DataFrame(peso_estatura_presion_lista, columns=['Peso', 'Estatura', 'Sistolica', 'Diastolica'])
 
       peso_estatura_presion_medidas = df[['Peso', 'Estatura', 'Sistolica', 'Diastolica']].describe().loc[['count', 'min', 'max', 'mean', '50%', 'std']]
-      peso_estatura_presion_medidas = peso_estatura_presion_medidas.rename(index={'count': 'Conteo', 'min': 'Mínimo', 'max': 'Máximo', 'mean': 'Media', '50%': 'Mediana', 'std': 'Desviación estándar'})
+      peso_estatura_presion_medidas = peso_estatura_presion_medidas.rename(index={'count': 'Conteo', 'min': 'Mínimo', 'max': 'Máximo', 
+                                                                                  'mean': 'Media', '50%': 'Mediana', 'std': 'Desviación estándar'})
 
       print(peso_estatura_presion_medidas.round(2))
 
@@ -1517,7 +1528,8 @@ def estadisticos_demograficos():
         df = pd.DataFrame(datos_filtrados, columns=['Peso', 'Estatura', 'Sistolica', 'Diastolica'])
 
         peso_estatura_presion_edad_sexo_medidas = datos_filtrados[['Peso', 'Estatura', 'Sistolica', 'Diastolica']].describe().loc[['count', 'min', 'max', 'mean', '50%', 'std']]
-        peso_estatura_presion_edad_sexo_medidas = peso_estatura_presion_edad_sexo_medidas.rename(index={'count': 'Conteo', 'min': 'Mínimo', 'max': 'Máximo', 'mean': 'Media', '50%': 'Mediana', 'std': 'Desviación estándar'})
+        peso_estatura_presion_edad_sexo_medidas = peso_estatura_presion_edad_sexo_medidas.rename(index={'count': 'Conteo', 'min': 'Mínimo', 'max': 'Máximo', 
+                                                                                                        'mean': 'Media', '50%': 'Mediana', 'std': 'Desviación estándar'})
 
         print(peso_estatura_presion_edad_sexo_medidas.round(2))
 
