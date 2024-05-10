@@ -63,6 +63,28 @@ def mostrar_menu(opciones:dict,
     
   return op
 
+def crear_tabla_pacientes():
+  cursor.execute('CREATE TABLE IF NOT EXISTS Pacientes (\
+  id_paciente INTEGER PRIMARY KEY, \
+  primer_apellido TEXT NOT NULL, \
+  segundo_apellido TEXT, \
+  nombre TEXT NOT NULL, \
+  fecha_nacimiento TIMESTAMP NOT NULL, \
+  sexo TEXT NOT NULL);')
+
+def crear_tabla_citas():
+  cursor.execute('CREATE TABLE IF NOT EXISTS Citas (\
+    id_cita INTEGER PRIMARY KEY, \
+    id_paciente INTEGER NOT NULL, \
+    fecha_cita TIMESTAMP NOT NULL, \
+    turno_cita TEXT NOT NULL, \
+    hora_llegada TEXT NOT NULL, \
+    peso_kg REAL NOT NULL, \
+    estatura_cm REAL NOT NULL, \
+    presion_arterial TEXT NOT NULL, \
+    diagnostico TEXT NOT NULL, \
+    FOREIGN KEY(id_paciente) REFERENCES Pacientes(id_paciente));')
+  
 def validar_nombre(prompt, 
                     omision = False):
   while True: 
@@ -148,15 +170,8 @@ def registro_pacientes():
     try:
       with sqlite3.connect('Consultorio.db') as conn:
         cursor = conn.cursor()
-          
         # Creación de tabla Pacientes
-        cursor.execute('CREATE TABLE IF NOT EXISTS Pacientes (\
-          id_paciente INTEGER PRIMARY KEY, \
-          primer_apellido TEXT NOT NULL, \
-          segundo_apellido TEXT, \
-          nombre TEXT NOT NULL, \
-          fecha_nacimiento TIMESTAMP NOT NULL, \
-          sexo TEXT NOT NULL);')
+        crear_tabla_pacientes()
         # Ingreso de datos
         cursor.execute('INSERT INTO Pacientes (primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo) \
                         VALUES(?,?,?,?,?)', paciente)
@@ -350,19 +365,7 @@ def crear_cita():
     try:
       with sqlite3.connect('Consultorio.db') as conn:
         cursor = conn.cursor()
-        
-        cursor.execute('CREATE TABLE IF NOT EXISTS Citas (\
-          id_cita INTEGER PRIMARY KEY, \
-          id_paciente INTEGER NOT NULL, \
-          fecha_cita TIMESTAMP NOT NULL, \
-          turno_cita TEXT NOT NULL, \
-          hora_llegada TEXT NOT NULL, \
-          peso_kg TEXT NOT NULL, \
-          estatura_cm TEXT NOT NULL, \
-          presion_arterial TEXT NOT NULL, \
-          diagnostico TEXT NOT NULL, \
-          FOREIGN KEY(id_paciente) REFERENCES Pacientes(id_paciente));')
-        
+        crear_tabla_citas()
         cursor.execute('INSERT INTO Citas (id_paciente, fecha_cita, turno_cita, hora_llegada, peso_kg, estatura_cm, presion_arterial, diagnostico) \
                         VALUES(?,?,?,?,?,?,?,?)', cita)
         print(f'El folio de la cita asignada fue {cursor.lastrowid}')
@@ -578,17 +581,7 @@ def realizar_citas():
         cursor = conn.cursor()
         
         # Creación de tabla Citas
-        cursor.execute('CREATE TABLE IF NOT EXISTS Citas (\
-          id_cita INTEGER PRIMARY KEY, \
-          id_paciente INTEGER NOT NULL, \
-          fecha_cita TIMESTAMP NOT NULL, \
-          turno_cita TEXT NOT NULL, \
-          hora_llegada TEXT NOT NULL, \
-          peso_kg REAL NOT NULL, \
-          estatura_cm REAL NOT NULL, \
-          presion_arterial TEXT NOT NULL, \
-          diagnostico TEXT NOT NULL, \
-          FOREIGN KEY(id_paciente) REFERENCES Pacientes(id_paciente));')
+        crear_tabla_citas()
         # Actualización
         cursor.execute('UPDATE Citas\
                         SET hora_llegada = ?, peso_kg = ?, estatura_cm = ?, presion_arterial = ?, diagnostico = ?\
@@ -1635,25 +1628,15 @@ while True:
   try:
     with sqlite3.connect('Consultorio.db') as conn:
       cursor = conn.cursor()
+      crear_tabla_pacientes()
       cursor.execute('SELECT * FROM Pacientes')
       pacientes = cursor.fetchall()
-  except sqlite3.Error as e:
-    print(e)
-    pacientes = ()
-  except:
-      print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
-  finally:
-      if (conn):
-          conn.close()
-
-  try:
-    with sqlite3.connect('Consultorio.db') as conn:
-      cursor = conn.cursor()
+      crear_tabla_citas()
       cursor.execute('SELECT * FROM Citas')
       citas = cursor.fetchall()
   except sqlite3.Error as e:
     print(e)
-    citas = ()
+    pacientes = ()
   except:
       print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
   finally:
