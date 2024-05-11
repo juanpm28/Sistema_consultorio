@@ -153,10 +153,9 @@ def registro_pacientes():
     try:
       with sqlite3.connect('Consultorio.db') as conn:
         cursor = conn.cursor()
-        crear_tabla_pacientes()
         cursor.execute('INSERT INTO Pacientes (primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo) \
                         VALUES(?,?,?,?,?)', paciente)
-        print(f'La clave asignada al paciente fue {cursor.lastrowid}')
+        print(f'\n La clave asignada al paciente fue {cursor.lastrowid}')
     except sqlite3.Error as e:
       print(e)
     except:
@@ -339,7 +338,6 @@ def crear_cita():
     try:
       with sqlite3.connect('Consultorio.db') as conn:
         cursor = conn.cursor()
-        crear_tabla_citas()
         cursor.execute('INSERT INTO Citas (id_paciente, fecha_cita, turno_cita, hora_llegada, peso_kg, estatura_cm, presion_arterial, diagnostico) \
                         VALUES(?,?,?,?,?,?,?,?)', cita)
         print(f'El folio de la cita asignada fue {cursor.lastrowid}')
@@ -532,7 +530,6 @@ def realizar_citas():
       with sqlite3.connect('Consultorio.db') as conn:
         conn.execute("PRAGMA foreign_keys=1")
         cursor = conn.cursor()
-        crear_tabla_citas()
         cursor.execute('UPDATE Citas\
                         SET hora_llegada = ?, peso_kg = ?, estatura_cm = ?, presion_arterial = ?, diagnostico = ?\
                         WHERE id_cita = ?', cita_realizada)
@@ -909,12 +906,15 @@ def menu_periodo_paciente():
         for clave_paciente, primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo, folio_cita, fecha_cita, turno, hora_llegada, \
           peso_kg, estatura_cm, presion_arterial in citas_encontradas:
           fecha_nacimiento = fecha_nacimiento.date().strftime('%m/%d/%Y')
+          edad = fecha_cita.year - fecha_nacimiento.year
+          if (fecha_nacimiento.month, fecha_nacimiento.day) > (fecha_cita.month, fecha_cita.day):
+            edad = edad - 1
           citas_encontradas = [[clave_paciente, primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo, folio_cita, fecha_cita, turno, 
-                                hora_llegada, peso_kg, estatura_cm, presion_arterial]]
+                                hora_llegada, peso_kg, estatura_cm, presion_arterial, edad]]
 
         print(f'Reporte de citas entre {_fecha_inicial} y {_fecha_final}')
         encabezados = ['Clave_paciente', '1er_Apellido', '2do_Apellido', 'Nombre', 'Fecha_nacimiento', 'Sexo', 'Folio_cita', 'Fecha_cita', \
-                       'Turno', 'Hora_llegada', 'Peso_kg', 'Estatura_cm',  'Presion_arterial']
+                       'Turno', 'Hora_llegada', 'Peso_kg', 'Estatura_cm',  'Presion_arterial', 'Edad']
         print(tabulate(citas_encontradas, headers = encabezados, tablefmt="rounded_grid", rowalign="center"))
         
         exportar('reporte_citas_periodo', df_citas_encontradas)
