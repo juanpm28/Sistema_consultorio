@@ -1,6 +1,5 @@
 import datetime
 import re
-import csv
 import sys
 import sqlite3
 import pandas as pd
@@ -8,6 +7,8 @@ from tabulate import tabulate
 from datetime import datetime as dd
 
 fecha_actual = datetime.datetime.today()
+fecha_actual = fecha_actual.replace(hour=0, minute=0, second=0, microsecond=0)
+fecha_actual_exportar = fecha_actual.date().strftime('%m_%d_%Y')
 
 menu_principal = {
     '1':'Registro de pacientes',
@@ -19,9 +20,9 @@ menu_principal = {
 def exportar(nombre, datos):
   op_export = mostrar_menu({'1':'Excel', '2':'CSV', 'X':'No exportar'}, '¿Deseas exportar la información mostrada a un archivo de Excel o CSV?')
   if op_export == '1':
-    datos.to_excel(f'{nombre}.xlsx', index=False)
-  elif op_export == '1':
-    datos.to_csv(f'{nombre}.csv', index=False)
+    datos.to_excel(f'{nombre}_{fecha_actual_exportar}.xlsx', index=False)
+  elif op_export == '2':
+    datos.to_csv(f'{nombre}_{fecha_actual_exportar}.csv', index=False)
 
 def elegir_opcion(prompt='Elige la opción deseada',
                   opciones='123SNX'):
@@ -121,7 +122,7 @@ def registro_pacientes():
         print('\nFecha inválida, revise que se esté utilizando el formato adecuado. Inténtelo de nuevo o utilice [*]: Cancelar operación')
         continue
 
-      if fecha_nacimiento >= fecha_actual.replace(hour=0, minute=0, second=0, microsecond=0):
+      if fecha_nacimiento >= fecha_actual:
         print('\nLa fecha de nacimiento no puede ser superior o igual a la fecha actual. Inténtelo de nuevo o utilice [*]: Cancelar operación')
         continue
       break
@@ -218,21 +219,9 @@ def crear_cita():
         if (conn):
             conn.close()
 
-    datos_paciente = []
-
-    for clave_paciente, primer_apellido, segundo_apellido, nombre in pacientes: 
-      clave_paciente = int(clave_paciente)
-      primer_apellido = str(primer_apellido)
-      segundo_apellido = str(segundo_apellido)
-      if segundo_apellido == 'None':
-        segundo_apellido = " "
-      nombre = str(nombre)
-
-      datos_paciente.append([clave_paciente, primer_apellido, segundo_apellido, nombre])
-
     if pacientes:
       encabezados = ['Clave paciente', 'Primer Apellido', 'Segundo Apellido', 'Nombre']
-      print(tabulate(datos_paciente, headers=encabezados, tablefmt='rounded_grid', rowalign='center'))
+      print(tabulate(pacientes, headers=encabezados, tablefmt='rounded_grid', rowalign='center'))
     _clave_paciente = input('Ingresa la clave del paciente\n').strip()
     if _clave_paciente.upper() == '*':
       break
@@ -283,10 +272,10 @@ def crear_cita():
         print('\nFecha inválida. Inténtelo de nuevo o utilice [*]: Cancelar operación')
         continue
 
-      if fecha_cita < fecha_actual:
+      if fecha_cita <= fecha_actual:
         print('\nLa fecha ingresada debe ser posterior a la fecha actual. Inténtelo de nuevo o utilice [*]: Cancelar operación')
         continue
-      
+
       if fecha_cita > fecha_actual_mas_60:
         print('\nLa fecha ingresada no debe ser mayor o igual a 60 días posteriores a la fecha actual. Inténtelo de nuevo o utilice [*]: Cancelar operación')
         print(f'Fecha más distante para agendar una cita: {fecha_distante}')
@@ -618,7 +607,7 @@ def eliminar_por_fecha():
           print("\nNo hay citas pendientes para la fecha ingresada.")
           return  
 
-      print("\nCitas encontradas para la fecha", fecha_a_buscar.strftime('%m/%d/%Y') + ":")
+      print("\nCitas encontradas para la fecha", fecha_a_buscar.date().strftime('%m/%d/%Y') + ":")
       encabezados = ["Folio","Nombre", "Primer apellido", "Segundo apellido", "Turno"]
       print(tabulate((citas_en_fecha), headers = encabezados, tablefmt="rounded_grid", rowalign="center"))
           
@@ -727,13 +716,15 @@ def cancelacion_por_paciente():
           print('\nNo existen citas pendientes por eliminar del paciente')
           return
 
+        citas_encontradas_tab = []
+
         for folio_cita, fecha_cita, turno in citas_encontradas:
           fecha_cita = fecha_cita.date().strftime('%m/%d/%Y')
-          citas_encontradas[[folio_cita, fecha_cita, turno]]
+          citas_encontradas_tab.append([folio_cita, fecha_cita, turno])
 
         print('Citas encontradas: ')
         encabezados = ["Folio_cita", "Fecha_cita", "Turno"]
-        print(tabulate((citas_encontradas), headers = encabezados, tablefmt="rounded_grid", rowalign="center"))   
+        print(tabulate((citas_encontradas_tab), headers = encabezados, tablefmt="rounded_grid", rowalign="center"))   
         
         while True:
           _folio_a_eliminar = input("Ingrese el folio de la cita a eliminar\n").strip()
@@ -903,19 +894,22 @@ def menu_periodo_paciente():
           print('\nNo existen citas para el periodo especificado.')
           break
         
+        citas_encontradas_tab = []
+
         for clave_paciente, primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo, folio_cita, fecha_cita, turno, hora_llegada, \
           peso_kg, estatura_cm, presion_arterial in citas_encontradas:
-          fecha_nacimiento = fecha_nacimiento.date().strftime('%m/%d/%Y')
           edad = fecha_cita.year - fecha_nacimiento.year
           if (fecha_nacimiento.month, fecha_nacimiento.day) > (fecha_cita.month, fecha_cita.day):
             edad = edad - 1
-          citas_encontradas = [[clave_paciente, primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo, folio_cita, fecha_cita, turno, 
-                                hora_llegada, peso_kg, estatura_cm, presion_arterial, edad]]
+          fecha_nacimiento = fecha_nacimiento.date().strftime('%m/%d/%Y')
+          fecha_cita = fecha_cita.date().strftime('%m/%d/%Y')
+          citas_encontradas_tab.append([clave_paciente, primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo, folio_cita, fecha_cita, turno, 
+                                hora_llegada, peso_kg, estatura_cm, presion_arterial, edad])
 
         print(f'Reporte de citas entre {_fecha_inicial} y {_fecha_final}')
         encabezados = ['Clave_paciente', '1er_Apellido', '2do_Apellido', 'Nombre', 'Fecha_nacimiento', 'Sexo', 'Folio_cita', 'Fecha_cita', \
                        'Turno', 'Hora_llegada', 'Peso_kg', 'Estatura_cm',  'Presion_arterial', 'Edad']
-        print(tabulate(citas_encontradas, headers = encabezados, tablefmt="rounded_grid", rowalign="center"))
+        print(tabulate(citas_encontradas_tab, headers = encabezados, tablefmt="rounded_grid", rowalign="center"))
         
         exportar('reporte_citas_periodo', df_citas_encontradas)
         break
@@ -964,23 +958,27 @@ def menu_periodo_paciente():
           print('\nNo existen citas registradas para el paciente.')
           break
 
+        paciente_buscado_tab = []
+
         for clave_paciente, primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo in paciente_buscado:
           fecha_nacimiento = fecha_nacimiento.date().strftime('%m/%d/%Y')
-          paciente_buscado = [[clave_paciente, primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo]]
+          paciente_buscado_tab.append([clave_paciente, primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo])
         
         print('Datos del paciente:')
         encabezados = ['Clave_paciente',  '1er_Apellido',  '2do_Apellido', 'Nombre', 'Fecha_nacimiento', 'Sexo']
-        print(tabulate((paciente_buscado), headers= encabezados, tablefmt="rounded_grid", rowalign="center"))
+        print(tabulate((paciente_buscado_tab), headers= encabezados, tablefmt="rounded_grid", rowalign="center"))
         
+        citas_encontradas_tab = []
+
         for folio_cita, fecha_cita, turno, hora_llegada, peso_kg, estatura_cm, presion_arterial in citas_encontradas:
           fecha_cita = fecha_cita.date().strftime('%m/%d/%Y')
-          citas_encontradas = [[folio_cita, fecha_cita, turno, hora_llegada, peso_kg, estatura_cm, presion_arterial]]
+          citas_encontradas_tab.append([folio_cita, fecha_cita, turno, hora_llegada, peso_kg, estatura_cm, presion_arterial])
 
         print('Citas del paciente: ')
         encabezados = ['Folio_cita', 'Fecha_cita', 'Turno', 'Hora_llegada', 'Peso_kg', 'Estatura_cm', 'Presion_arterial']
-        print(tabulate((citas_encontradas), headers= encabezados, tablefmt="rounded_grid", rowalign="center"))
+        print(tabulate((citas_encontradas_tab), headers= encabezados, tablefmt="rounded_grid", rowalign="center"))
 
-        exportar(f'citas_', df_citas_encontradas)
+        exportar(f'citas_{nombre}_{primer_apellido}', df_citas_encontradas)
         break
       
     if op_periodo_paciente == 'X':
@@ -1013,14 +1011,16 @@ def menu_listado_busqueda_clave_apellidos():
       if not pacientes:
         print('\nNo hay pacientes registrados en el sistema.')
         continue
+
+      pacientes_tab = []
       
       for clave_paciente, primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo in pacientes:
         fecha_nacimiento = fecha_nacimiento.date().strftime('%m/%d/%Y')
-        pacientes = [[clave_paciente, primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo]]
+        pacientes_tab.append([clave_paciente, primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo])
 
       print(f'Información de los pacientes registrados')
       encabezados = ['Clave_paciente', '1er_Apellido', '2do_Apellido',  'Nombre', 'Fecha_nacimiento', 'Sexo']
-      print(tabulate((pacientes), headers= encabezados, tablefmt = "rounded_grid", rowalign="center"))
+      print(tabulate((pacientes_tab), headers= encabezados, tablefmt = "rounded_grid", rowalign="center"))
 
       exportar("listado_pacientes", df_pacientes)
       
@@ -1059,12 +1059,15 @@ def menu_listado_busqueda_clave_apellidos():
             if (conn):
                 conn.close()
 
+        pacientes_tab = []
+      
         for clave_paciente, primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo in paciente_buscado:
           fecha_nacimiento = fecha_nacimiento.date().strftime('%m/%d/%Y')
-          paciente_buscado = [[clave_paciente, primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo]]
-        
-        encabezados = ['Clave_paciente',  '1er_Apellido',  '2do_Apellido', 'Nombre', 'Fecha_nacimiento', 'Sexo']
-        print(tabulate((paciente_buscado), headers= encabezados, tablefmt="rounded_grid", rowalign="center"))
+          pacientes_tab.append([clave_paciente, primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo]) 
+
+        print(f'Información de los pacientes registrados')
+        encabezados = ['Clave_paciente', '1er_Apellido', '2do_Apellido',  'Nombre', 'Fecha_nacimiento', 'Sexo']
+        print(tabulate((pacientes_tab), headers= encabezados, tablefmt = "rounded_grid", rowalign="center"))
 
         exportar("busqueda_paciente_clave", df_paciente_buscado)
 
@@ -1091,13 +1094,15 @@ def menu_listado_busqueda_clave_apellidos():
           print('\nNo hay citas registradas para el paciente')
           break
 
+        expediente_tab = []
+
         for folio_cita, fecha_cita, turno, hora_llegada, peso_kg, estatura_cm, presion_arterial, diagnostico in expediente:
           fecha_cita = fecha_cita.date().strftime('%m/%d/%Y')
-          expediente = [[folio_cita, fecha_cita, turno, hora_llegada, peso_kg, estatura_cm, presion_arterial, diagnostico]]
+          expediente_tab.append([folio_cita, fecha_cita, turno, hora_llegada, peso_kg, estatura_cm, presion_arterial, diagnostico])
 
         print('Diagnostico del paciente: ')
         encabezados = ['id_cita', 'fecha_cita', 'turno_cita', 'hora_llegada', 'peso_kg', 'estatura_cm', 'presion_arterial', 'diagnostico']
-        print(tabulate((expediente), headers = encabezados, tablefmt="rounded_grid", rowalign="center"))
+        print(tabulate((expediente_tab), headers = encabezados, tablefmt="rounded_grid", rowalign="center"))
 
         break
       
@@ -1176,12 +1181,14 @@ def menu_listado_busqueda_clave_apellidos():
           print('\nPaciente no encontrado.')
           break
 
+        paciente_buscado_tab = []
+
         for clave_paciente, primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo in paciente_buscado:
           fecha_nacimiento = fecha_nacimiento.date().strftime('%m/%d/%Y')
-          paciente_buscado = [[clave_paciente, primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo]]
+          paciente_buscado_tab.append([clave_paciente, primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo])
 
         encabezados = ('Clave_paciente', '1er_Apellido', '2do_Apellido', 'Nombre', 'Fecha_nacimiento', 'Sexo')
-        print(tabulate((paciente_buscado), headers = encabezados, tablefmt="rounded_grid", rowalign="center"))
+        print(tabulate((paciente_buscado_tab), headers = encabezados, tablefmt="rounded_grid", rowalign="center"))
 
         exportar("busqueda_paciente_nombre_apellidos", df_paciente_buscado)
 
@@ -1205,12 +1212,14 @@ def menu_listado_busqueda_clave_apellidos():
             if (conn):
                 conn.close()
 
+        expediente_tab = []
+
         for folio_cita, fecha_cita, turno, hora_llegada, peso_kg, estatura_cm, presion_arterial, diagnostico in expediente:
           fecha_cita = fecha_cita.date().strftime('%m/%d/%Y')
-          expediente = [[folio_cita, fecha_cita, turno, hora_llegada, peso_kg, estatura_cm, presion_arterial, diagnostico]]
+          expediente_tab.append([folio_cita, fecha_cita, turno, hora_llegada, peso_kg, estatura_cm, presion_arterial, diagnostico])
 
         encabezados = ('Folio_cita', 'Fecha_cita', 'Turno', 'Hora_llegada', 'Peso_kg', 'Estatura_cm', 'Presion_arterial', 'Diagnóstico')
-        print(tabulate((expediente), headers = encabezados, tablefmt="rounded_grid", rowalign="center"))
+        print(tabulate((expediente_tab), headers = encabezados, tablefmt="rounded_grid", rowalign="center"))
 
         break
  
@@ -1304,10 +1313,10 @@ def estadisticos_demograficos():
 
           peso_estatura_presion_fecha_lista.append([peso, estatura, sistolica, diastolica, edad])
         
-        df_peso_estatura_presion_fecha = pd.DataFrame(peso_estatura_presion_fecha_lista, columns = ['Peso', 'Estatura', 'Sistolica', 'Diastolica', 'edad'])
+        df_peso_estatura_presion_fecha = pd.DataFrame(peso_estatura_presion_fecha_lista, columns = ['Peso', 'Estatura', 'Sistolica', 'Diastolica', 'Edad'])
 
-        filtro_edad_inicial = df_peso_estatura_presion_fecha["edad"] >= edad_inicial 
-        filtro_edad_final = df_peso_estatura_presion_fecha["edad"] <= edad_final
+        filtro_edad_inicial = df_peso_estatura_presion_fecha["Edad"] >= edad_inicial 
+        filtro_edad_final = df_peso_estatura_presion_fecha["Edad"] <= edad_final
 
         datos_filtrados = df_peso_estatura_presion_fecha[filtro_edad_inicial & filtro_edad_final]
 
@@ -1318,10 +1327,10 @@ def estadisticos_demograficos():
         peso_estatura_presion_edad_medidas = datos_filtrados[['Peso', 'Estatura', 'Sistolica', 'Diastolica']].describe().loc[['count', 'min', 'max', 'mean', '50%', 'std']]
         peso_estatura_presion_edad_medidas = peso_estatura_presion_edad_medidas.rename(index={'count': 'Conteo', 'min': 'Mínimo', 'max': 'Máximo', 
                                                                                               'mean': 'Media', '50%': 'Mediana', 'std': 'Desviación estándar'})
-        print(peso_estatura_presion_edad_medidas.round(2))
+        peso_estatura_presion_edad_medidas = peso_estatura_presion_edad_medidas.round(2)
+        print(tabulate((peso_estatura_presion_edad_medidas), headers='keys', tablefmt='rounded_grid', rowalign="center"))
 
         exportar('estadisticos_demograficos_edad', datos_filtrados[['Peso', 'Estatura', 'Sistolica', 'Diastolica']])
-        
         break
 
     elif op_edad_sexo == '2':
@@ -1349,30 +1358,12 @@ def estadisticos_demograficos():
                             detect_types = sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as conn:
           conn.execute("PRAGMA foreign_keys=1")
           cursor = conn.cursor()
-
-        if sexo == 'H':
-            cursor.execute("SELECT C.peso_kg, C.estatura_cm, C.presion_arterial \
+          cursor.execute("SELECT C.peso_kg, C.estatura_cm, C.presion_arterial \
                             FROM Citas C\
                             INNER JOIN Pacientes P \
                             ON C.id_paciente = P.id_paciente \
-                            WHERE peso_kg != 'NA' AND P.sexo = ?", ('H',))
-            sexo = cursor.fetchall()
-
-        elif sexo == 'M':
-            cursor.execute("SELECT C.peso_kg, C.estatura_cm, C.presion_arterial \
-                            FROM Citas C\
-                            INNER JOIN Pacientes P \
-                            ON C.id_paciente = P.id_paciente \
-                            WHERE peso_kg != 'NA' AND P.sexo = ?", ('M',))
-            sexo = cursor.fetchall()
-
-        elif sexo == 'N':
-            cursor.execute("SELECT C.peso_kg, C.estatura_cm, C.presion_arterial \
-                            FROM Citas C\
-                            INNER JOIN Pacientes P \
-                            ON C.id_paciente = P.id_paciente \
-                            WHERE peso_kg != 'NA' AND P.sexo = ?", ('N',))
-            sexo = cursor.fetchall()
+                            WHERE peso_kg != 'NA' AND P.sexo = ?", (sexo,))
+          sexo = cursor.fetchall()
 
       except sqlite3.Error as e:
         print(e)
@@ -1381,7 +1372,11 @@ def estadisticos_demograficos():
       finally:
           if (conn):
               conn.close()
-      
+
+      if not sexo: 
+        print('No existen pacientes de ese sexo con citas realizadas ')
+        continue
+
       peso_estatura_presion_lista = []
 
       for peso, estatura, presion_arterial in sexo:
@@ -1398,8 +1393,8 @@ def estadisticos_demograficos():
       peso_estatura_presion_medidas = df[['Peso', 'Estatura', 'Sistolica', 'Diastolica']].describe().loc[['count', 'min', 'max', 'mean', '50%', 'std']]
       peso_estatura_presion_medidas = peso_estatura_presion_medidas.rename(index={'count': 'Conteo', 'min': 'Mínimo', 'max': 'Máximo', 
                                                                                   'mean': 'Media', '50%': 'Mediana', 'std': 'Desviación estándar'})
-
-      print(peso_estatura_presion_medidas.round(2))
+      peso_estatura_presion_medidas = peso_estatura_presion_medidas.round(2)
+      print(tabulate((peso_estatura_presion_medidas), headers='keys', tablefmt='rounded_grid', rowalign="center"))
 
       exportar('estadisticos_demograficos_sexo', df)
       
@@ -1482,7 +1477,7 @@ def estadisticos_demograficos():
         except sqlite3.Error as e:
           print(e)
         except:
-            print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
+          print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
         finally:
             if (conn):
                 conn.close()
@@ -1530,8 +1525,8 @@ def estadisticos_demograficos():
         peso_estatura_presion_edad_sexo_medidas = datos_filtrados[['Peso', 'Estatura', 'Sistolica', 'Diastolica']].describe().loc[['count', 'min', 'max', 'mean', '50%', 'std']]
         peso_estatura_presion_edad_sexo_medidas = peso_estatura_presion_edad_sexo_medidas.rename(index={'count': 'Conteo', 'min': 'Mínimo', 'max': 'Máximo', 
                                                                                                         'mean': 'Media', '50%': 'Mediana', 'std': 'Desviación estándar'})
-
-        print(peso_estatura_presion_edad_sexo_medidas.round(2))
+        peso_estatura_presion_edad_sexo_medidas = peso_estatura_presion_edad_sexo_medidas.round(2)
+        print(tabulate((peso_estatura_presion_edad_sexo_medidas), headers='keys', tablefmt='rounded_grid', rowalign="center"))
 
         exportar('estadisticos_demograficos_sexo_y_edad', datos_filtrados[['Peso', 'Estatura', 'Sistolica', 'Diastolica']])
         
