@@ -1318,9 +1318,13 @@ def estadisticos_demograficos():
         peso_estatura_presion_edad_medidas = peso_estatura_presion_edad_medidas.rename(index={'count': 'Conteo', 'min': 'Mínimo', 'max': 'Máximo', 
                                                                                               'mean': 'Media', '50%': 'Mediana', 'std': 'Desviación estándar'})
         peso_estatura_presion_edad_medidas = peso_estatura_presion_edad_medidas.round(2)
+        
+        print(f'\nDatos demográficos para el rango de edad de {edad_inicial} a {edad_final}\n')
         print(tabulate((peso_estatura_presion_edad_medidas), headers='keys', tablefmt='rounded_grid', rowalign="center"))
+        
+        peso_estatura_presion_edad_medidas.insert(0, '', peso_estatura_presion_edad_medidas.index)
 
-        exportar('estadisticos_demograficos_edad', datos_filtrados[['Peso', 'Estatura', 'Sistolica', 'Diastolica']])
+        exportar('estadisticos_demograficos_edad', peso_estatura_presion_edad_medidas)
         break
 
     elif op_edad_sexo == '2':
@@ -1341,52 +1345,63 @@ def estadisticos_demograficos():
         if sexo not in ['H', 'M', 'N']:
           print('\nOpción inválida. Inténtelo de nuevo o utilice [*]: Cancelar operación')
           continue
+
+        try:
+          with sqlite3.connect('Consultorio.db',
+                              detect_types = sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as conn:
+            conn.execute("PRAGMA foreign_keys=1")
+            cursor = conn.cursor()
+            cursor.execute("SELECT C.peso_kg, C.estatura_cm, C.presion_arterial \
+                              FROM Citas C\
+                              INNER JOIN Pacientes P \
+                              ON C.id_paciente = P.id_paciente \
+                              WHERE peso_kg != 'NA' AND P.sexo = ?", (sexo,))
+            peso_estatura_presion_sexo = cursor.fetchall()
+
+        except sqlite3.Error as e:
+          print(e)
+        except:
+            print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
+        finally:
+            if (conn):
+                conn.close()
+
+        if not peso_estatura_presion_sexo: 
+          print('No existen pacientes de ese sexo con citas realizadas ')
+          break
+
+        peso_estatura_presion_lista = []
+
+        for peso, estatura, presion_arterial in peso_estatura_presion_sexo:
+          peso = float(peso) 
+          estatura = float(estatura)
+          sistolica, diastolica = presion_arterial.split('/')
+          sistolica = int(sistolica)
+          diastolica = int(diastolica)
+          
+          peso_estatura_presion_lista.append((peso, estatura, sistolica, diastolica))
+          
+        df = pd.DataFrame(peso_estatura_presion_lista, columns=['Peso', 'Estatura', 'Sistolica', 'Diastolica'])
+
+        peso_estatura_presion_medidas = df[['Peso', 'Estatura', 'Sistolica', 'Diastolica']].describe().loc[['count', 'min', 'max', 'mean', '50%', 'std']]
+        peso_estatura_presion_medidas = peso_estatura_presion_medidas.rename(index={'count': 'Conteo', 'min': 'Mínimo', 'max': 'Máximo', 
+                                                                                    'mean': 'Media', '50%': 'Mediana', 'std': 'Desviación estándar'})
+        peso_estatura_presion_medidas = peso_estatura_presion_medidas.round(2)
+        
+        if sexo == 'H':
+          sexo = 'Masculino'
+        if sexo == 'M':
+          sexo = 'Femenino'
+        if sexo == 'N':
+          sexo = 'Sin contestar'
+        
+        print(f'\nDatos demográficos para el sexo: {sexo}\n')
+        print(tabulate((peso_estatura_presion_medidas), headers='keys', tablefmt='rounded_grid', rowalign="center"))
+        
+        peso_estatura_presion_medidas.insert(0, '', peso_estatura_presion_medidas.index)
+
+        exportar('estadisticos_demograficos_sexo', peso_estatura_presion_medidas)
         break
-
-      try:
-        with sqlite3.connect('Consultorio.db',
-                            detect_types = sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as conn:
-          conn.execute("PRAGMA foreign_keys=1")
-          cursor = conn.cursor()
-          cursor.execute("SELECT C.peso_kg, C.estatura_cm, C.presion_arterial \
-                            FROM Citas C\
-                            INNER JOIN Pacientes P \
-                            ON C.id_paciente = P.id_paciente \
-                            WHERE peso_kg != 'NA' AND P.sexo = ?", (sexo,))
-          sexo = cursor.fetchall()
-
-      except sqlite3.Error as e:
-        print(e)
-      except:
-          print(f"Se produjo el siguiente error: {sys.exc_info()[0]}")
-      finally:
-          if (conn):
-              conn.close()
-
-      if not sexo: 
-        print('No existen pacientes de ese sexo con citas realizadas ')
-        continue
-
-      peso_estatura_presion_lista = []
-
-      for peso, estatura, presion_arterial in sexo:
-        peso = float(peso) 
-        estatura = float(estatura)
-        sistolica, diastolica = presion_arterial.split('/')
-        sistolica = int(sistolica)
-        diastolica = int(diastolica)
-        
-        peso_estatura_presion_lista.append((peso, estatura, sistolica, diastolica))
-        
-      df = pd.DataFrame(peso_estatura_presion_lista, columns=['Peso', 'Estatura', 'Sistolica', 'Diastolica'])
-
-      peso_estatura_presion_medidas = df[['Peso', 'Estatura', 'Sistolica', 'Diastolica']].describe().loc[['count', 'min', 'max', 'mean', '50%', 'std']]
-      peso_estatura_presion_medidas = peso_estatura_presion_medidas.rename(index={'count': 'Conteo', 'min': 'Mínimo', 'max': 'Máximo', 
-                                                                                  'mean': 'Media', '50%': 'Mediana', 'std': 'Desviación estándar'})
-      peso_estatura_presion_medidas = peso_estatura_presion_medidas.round(2)
-      print(tabulate((peso_estatura_presion_medidas), headers='keys', tablefmt='rounded_grid', rowalign="center"))
-
-      exportar('estadisticos_demograficos_sexo', df)
       
     elif op_edad_sexo == '3':
       flag_salir = False
@@ -1508,7 +1523,6 @@ def estadisticos_demograficos():
         if sexo == 'N':
           sexo = 'Sin contestar'
         
-        print(f'\nDatos demográficos para el rango de edad de {edad_inicial} a {edad_final} y sexo: {sexo}\n')
           
         df = pd.DataFrame(datos_filtrados, columns=['Peso', 'Estatura', 'Sistolica', 'Diastolica'])
 
@@ -1516,10 +1530,13 @@ def estadisticos_demograficos():
         peso_estatura_presion_edad_sexo_medidas = peso_estatura_presion_edad_sexo_medidas.rename(index={'count': 'Conteo', 'min': 'Mínimo', 'max': 'Máximo', 
                                                                                                         'mean': 'Media', '50%': 'Mediana', 'std': 'Desviación estándar'})
         peso_estatura_presion_edad_sexo_medidas = peso_estatura_presion_edad_sexo_medidas.round(2)
-        print(tabulate((peso_estatura_presion_edad_sexo_medidas), headers='keys', tablefmt='rounded_grid', rowalign="center"))
-
-        exportar('estadisticos_demograficos_sexo_y_edad', datos_filtrados[['Peso', 'Estatura', 'Sistolica', 'Diastolica']])
         
+        print(f'\nDatos demográficos para el rango de edad de {edad_inicial} a {edad_final} y sexo: {sexo}\n')
+        print(tabulate((peso_estatura_presion_edad_sexo_medidas), headers='keys', tablefmt='rounded_grid', rowalign="center"))
+        
+        peso_estatura_presion_edad_sexo_medidas.insert(0, '', peso_estatura_presion_edad_sexo_medidas.index)
+
+        exportar('estadisticos_demograficos_edad_sexo', peso_estatura_presion_edad_sexo_medidas)
         break
       
     elif op_edad_sexo == 'X':
