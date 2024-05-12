@@ -1085,8 +1085,7 @@ def menu_listado_busqueda_clave_apellidos():
           fecha_cita = fecha_cita.date().strftime('%m/%d/%Y')
           expediente_tab.append([folio_cita, fecha_cita, turno, hora_llegada, peso_kg, estatura_cm, presion_arterial, diagnostico, edad])
 
-        print('Expediente del paciente: ')
-        encabezados = ['id_cita', 'fecha_cita', 'turno_cita', 'hora_llegada', 'peso_kg', 'estatura_cm', 'presion_arterial', 'diagnostico', 'edad']
+        encabezados = ('Folio_cita', 'Fecha_cita', 'Turno', 'Hora_llegada', 'Peso_kg', 'Estatura_cm', 'Presion_arterial', 'Diagnóstico', 'Edad')
         print(tabulate((expediente_tab), headers = encabezados, tablefmt="rounded_grid", rowalign="center"))
 
         break
