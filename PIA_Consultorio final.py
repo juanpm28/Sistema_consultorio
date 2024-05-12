@@ -156,7 +156,7 @@ def registro_pacientes():
         cursor = conn.cursor()
         cursor.execute('INSERT INTO Pacientes (primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo) \
                         VALUES(?,?,?,?,?)', paciente)
-        print(f'\n La clave asignada al paciente fue {cursor.lastrowid}')
+        print(f'\nLa clave asignada al paciente fue la {cursor.lastrowid}')
     except sqlite3.Error as e:
       print(e)
     except:
@@ -294,7 +294,7 @@ def crear_cita():
       break
     
     while True:
-      print('\nTurnos disponibles')
+      print('Turnos disponibles')
       menu_turno_cita = {'1':'Mañana', '2':'Mediodía', '3':'Tarde'}
       [print(f'[{num}] {turno}') for num, turno in menu_turno_cita.items()]
       _turno_cita = input('Ingresa el turno de la cita\n').strip()
@@ -329,7 +329,7 @@ def crear_cita():
         cursor = conn.cursor()
         cursor.execute('INSERT INTO Citas (id_paciente, fecha_cita, turno_cita, hora_llegada, peso_kg, estatura_cm, presion_arterial, diagnostico) \
                         VALUES(?,?,?,?,?,?,?,?)', cita)
-        print(f'El folio de la cita asignada fue {cursor.lastrowid}')
+        print(f'El folio de la cita asignada fue la {cursor.lastrowid}')
 
     except sqlite3.Error as e:
       print(e)
@@ -378,8 +378,6 @@ def realizar_citas():
     if cita_buscada[5] != 'NA':
       print('\nLa cita programada ya ha sido realizada. Inténtelo de nuevo o utilice [*]: Cancelar operación')
       continue
-    
-    clave_paciente = cita_buscada[1]
     
     hora_llegada = datetime.datetime.now().time()
     _hora_llegada = str(hora_llegada)[0:8]
@@ -592,7 +590,7 @@ def eliminar_por_fecha():
       print(tabulate((citas_en_fecha), headers = encabezados, tablefmt="rounded_grid", rowalign="center"))
           
       while True:
-        _folio_a_eliminar = input("Ingrese el folio de la cita a eliminar o utilice [*]: Cancelar operación\n").strip()
+        _folio_a_eliminar = input("Ingrese el folio de la cita a eliminar\n").strip()
         if _folio_a_eliminar == '*':
           return
 
@@ -658,7 +656,7 @@ def cancelacion_por_paciente():
           return  
 
       while True:
-        _clave_paciente = input("Ingresa la clave del paciente al cual deseas eliminar alguna cita o utilice [*]: Cancelar operación\n").strip().upper()
+        _clave_paciente = input("Ingresa la clave del paciente al cual deseas eliminar alguna cita\n").strip().upper()
         if _clave_paciente == "*":
             break
 
