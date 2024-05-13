@@ -128,13 +128,11 @@ def registro_pacientes():
       try:
         fecha_nacimiento = datetime.datetime.strptime(_fecha_nacimiento, '%m/%d/%Y')
       except Exception:
-        print('\nFecha inválida, revise que se esté utilizando el formato adecuado. \
-                Inténtelo de nuevo o utilice [*]: Cancelar operación')
+        print('\nFecha inválida, revise que se esté utilizando el formato adecuado. Inténtelo de nuevo o utilice [*]: Cancelar operación')
         continue
 
       if fecha_nacimiento >= fecha_actual:
-        print('\nLa fecha de nacimiento no puede ser superior o igual a la fecha actual. \
-                Inténtelo de nuevo o utilice [*]: Cancelar operación')
+        print('\nLa fecha de nacimiento no puede ser superior o igual a la fecha actual. Inténtelo de nuevo o utilice [*]: Cancelar operación')
         continue
       break
     
@@ -164,7 +162,6 @@ def registro_pacientes():
     
     try:
       with sqlite3.connect('Consultorio.db') as conn:
-        conn.execute("PRAGMA foreign_keys=1")
         cursor = conn.cursor()
         cursor.execute('INSERT INTO Pacientes (primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo) \
                         VALUES(?,?,?,?,?)', paciente)
@@ -188,7 +185,6 @@ def citas_crear_realizar_cancelar_menu():
     
     try:
       with sqlite3.connect('Consultorio.db') as conn:
-        conn.execute("PRAGMA foreign_keys=1")
         cursor = conn.cursor()
         cursor.execute('SELECT * FROM Citas')
         citas = cursor.fetchall()
@@ -222,7 +218,6 @@ def crear_cita():
   while True:
     try:
       with sqlite3.connect('Consultorio.db') as conn:
-        conn.execute("PRAGMA foreign_keys=1")
         cursor = conn.cursor()
         cursor.execute('SELECT id_paciente, primer_apellido, segundo_apellido, nombre \
                         FROM Pacientes \
@@ -255,7 +250,6 @@ def crear_cita():
 
     try:
       with sqlite3.connect('Consultorio.db') as conn:
-        conn.execute("PRAGMA foreign_keys=1")
         cursor = conn.cursor()
         cursor.execute('SELECT id_paciente FROM Pacientes WHERE id_paciente = ?', (clave_paciente,))
         id_paciente_encontrado = cursor.fetchone() 
@@ -295,14 +289,12 @@ def crear_cita():
         continue
 
       if fecha_cita > fecha_actual_mas_60:
-        print('\nLa fecha ingresada no debe ser mayor o igual a 60 días posteriores a la fecha actual. \
-                Inténtelo de nuevo o utilice [*]: Cancelar operación')
+        print('\nLa fecha ingresada no debe ser mayor o igual a 60 días posteriores a la fecha actual. Inténtelo de nuevo o utilice [*]: Cancelar operación')
         print(f'Fecha más distante para agendar una cita: {fecha_distante}')
         continue
 
       if fecha_cita.weekday() == 6:
-        op_reagendar = elegir_opcion('La cita no se puede agendar en domingo. \
-                                      ¿Deseas agendarla para el sábado anterior inmediato? S/N\n', 'SN')
+        op_reagendar = elegir_opcion('La cita no se puede agendar en domingo. ¿Deseas agendarla para el sábado anterior inmediato? S/N\n', 'SN')
         if op_reagendar == 'S':
           fecha_cita = fecha_cita - datetime.timedelta(days=1)
           _fecha_cita = datetime.datetime.strftime(fecha_cita, '%m/%d/%Y')
@@ -346,10 +338,8 @@ def crear_cita():
     
     try:
       with sqlite3.connect('Consultorio.db') as conn:
-        conn.execute("PRAGMA foreign_keys=1")
         cursor = conn.cursor()
-        cursor.execute('INSERT INTO Citas (id_paciente, fecha_cita, turno_cita, hora_llegada, \
-                        peso_kg, estatura_cm, presion_arterial, diagnostico) \
+        cursor.execute('INSERT INTO Citas (id_paciente, fecha_cita, turno_cita, hora_llegada, peso_kg, estatura_cm, presion_arterial, diagnostico) \
                         VALUES(?,?,?,?,?,?,?,?)', cita)
         print(f'El folio de la cita asignada fue la {cursor.lastrowid}')
 
@@ -544,7 +534,6 @@ def cancelar_cita_menu():
 
     try:
       with sqlite3.connect('Consultorio.db') as conn:
-        conn.execute("PRAGMA foreign_keys=1")
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM Citas WHERE peso_kg = 'NA';")
         citas = cursor.fetchall()
@@ -592,7 +581,6 @@ def eliminar_por_fecha():
       try:
         with sqlite3.connect('Consultorio.db', 
                               detect_types = sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as conn:
-          conn.execute("PRAGMA foreign_keys=1")
           cursor = conn.cursor()
           cursor.execute("SELECT C.id_cita, P.nombre, P.primer_apellido, P.segundo_apellido, C.turno_cita \
                           FROM Citas C \
@@ -632,8 +620,7 @@ def eliminar_por_fecha():
           continue
 
         if folio_a_eliminar not in [id_cita for id_cita, _, _, _, _ in citas_en_fecha]:
-          print("\nEl folio de cita a eliminar no existe en las citas desplegadas. \
-                  Inténtelo de nuevo o utilice [*]: Cancelar operación")
+          print("\nEl folio de cita a eliminar no existe en las citas desplegadas. Inténtelo de nuevo o utilice [*]: Cancelar operación")
           continue
         break
     
@@ -642,7 +629,6 @@ def eliminar_por_fecha():
 
         try:
           with sqlite3.connect('Consultorio.db') as conn:
-            conn.execute("PRAGMA foreign_keys=1")
             cursor = conn.cursor()
             cursor.execute('DELETE FROM Citas WHERE id_cita = ?;', (folio_a_eliminar,))
             print(f'Se ha eliminado la cita {folio_a_eliminar}')
@@ -661,7 +647,6 @@ def eliminar_por_fecha():
 def cancelacion_por_paciente():
       try:
         with sqlite3.connect('Consultorio.db') as conn:
-          conn.execute("PRAGMA foreign_keys=1")
           cursor = conn.cursor()
           cursor.execute("SELECT DISTINCT(P.id_paciente), P.nombre, P.primer_apellido, P.segundo_apellido \
                           FROM Citas C \
@@ -702,8 +687,7 @@ def cancelacion_por_paciente():
             continue
 
         if clave_paciente not in [id_paciente for id_paciente, _, _, _ in pacientes_citas_pendientes]:
-            print("\nLa clave del paciente no existe en la lista de pacientes mostrada. \
-                    Inténtelo de nuevo o utilice [*]: Cancelar operación")
+            print("\nLa clave del paciente no existe en la lista de pacientes mostrada. Inténtelo de nuevo o utilice [*]: Cancelar operación")
             continue
 
         try:
@@ -752,8 +736,7 @@ def cancelacion_por_paciente():
             continue
 
           if folio_a_eliminar not in [id_cita for id_cita,_ ,_ in citas_encontradas]:
-            print("\nEl folio a eliminar no existe en las citas desplegadas. \
-                    Inténtelo de nuevo o utilice [*]: Cancelar operación")
+            print("\nEl folio a eliminar no existe en las citas desplegadas. Inténtelo de nuevo o utilice [*]: Cancelar operación")
             continue
           break
           
@@ -761,7 +744,6 @@ def cancelacion_por_paciente():
         if op_confirmacion == "S":  
           try:
             with sqlite3.connect('Consultorio.db') as conn:
-              conn.execute("PRAGMA foreign_keys=1")
               cursor = conn.cursor()
               cursor.execute('DELETE FROM Citas WHERE id_cita = ?;', (folio_a_eliminar,))
               print(f'Se ha eliminado la cita {folio_a_eliminar}')
@@ -781,7 +763,6 @@ redirige a las funciones que sean necesarias '''
 def consultas_reportes():
   try:
     with sqlite3.connect('Consultorio.db') as conn:
-      conn.execute("PRAGMA foreign_keys=1")
       cursor = conn.cursor()
       cursor.execute('SELECT * FROM Pacientes')
       pacientes = cursor.fetchall()
@@ -875,8 +856,7 @@ def menu_periodo_paciente():
           break
         
         if fecha_final < fecha_inicial:
-          print('\nError. La fecha final debe ser superior o igual a la fecha inicial. \
-                  Inténtelo de nuevo o utilice [*]: Cancelar operación')
+          print('\nError. La fecha final debe ser superior o igual a la fecha inicial. Inténtelo de nuevo o utilice [*]: Cancelar operación')
           continue
         
         fechas = (fecha_inicial, fecha_final)
@@ -893,14 +873,12 @@ def menu_periodo_paciente():
                             ON P.id_paciente = C.id_paciente \
                             WHERE fecha_cita BETWEEN ? AND ?", fechas)
             citas_encontradas = cursor.fetchall()
-            df_citas_encontradas = pd.read_sql("SELECT P.id_paciente, P.primer_apellido, P.segundo_apellido, \
-                                              P.nombre, P.fecha_nacimiento, \
-                                              P.sexo, C.id_cita, C.fecha_cita, C.turno_cita, \
-                                              C.hora_llegada, C.peso_kg, C.estatura_cm, C.presion_arterial \
-                                              FROM Pacientes P \
-                                              INNER JOIN Citas C \
-                                              ON P.id_paciente = C.id_paciente \
-                                              WHERE fecha_cita BETWEEN ? AND ?", conn, params=fechas)
+            df_citas_encontradas = pd.read_sql("SELECT P.id_paciente, P.primer_apellido, P.segundo_apellido, P.nombre, P.fecha_nacimiento, \
+                                               P.sexo, C.id_cita, C.fecha_cita, C.turno_cita, C.hora_llegada, C.peso_kg, C.estatura_cm, C.presion_arterial \
+                            FROM Pacientes P \
+                            INNER JOIN Citas C \
+                            ON P.id_paciente = C.id_paciente \
+                            WHERE fecha_cita BETWEEN ? AND ?", conn, params=fechas)
         except sqlite3.Error as e:
           print(e)
         except:
@@ -915,21 +893,19 @@ def menu_periodo_paciente():
         
         citas_encontradas_tab = []
 
-        for clave_paciente, primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo, \
-          folio_cita, fecha_cita, turno, hora_llegada, peso_kg, estatura_cm, presion_arterial in citas_encontradas:
+        for clave_paciente, primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo, folio_cita, fecha_cita, turno, hora_llegada, \
+          peso_kg, estatura_cm, presion_arterial in citas_encontradas:
           edad = fecha_cita.year - fecha_nacimiento.year
           if (fecha_nacimiento.month, fecha_nacimiento.day) > (fecha_cita.month, fecha_cita.day):
             edad = edad - 1
           fecha_nacimiento = fecha_nacimiento.date().strftime('%m/%d/%Y')
           fecha_cita = fecha_cita.date().strftime('%m/%d/%Y')
-          citas_encontradas_tab.append([clave_paciente, primer_apellido, segundo_apellido, nombre, 
-                                        fecha_nacimiento, sexo, folio_cita, fecha_cita, turno, 
-                                        hora_llegada, peso_kg, estatura_cm, presion_arterial, edad])
+          citas_encontradas_tab.append([clave_paciente, primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo, folio_cita, fecha_cita, turno, 
+                                hora_llegada, peso_kg, estatura_cm, presion_arterial, edad])
 
         print(f'Reporte de citas entre {_fecha_inicial} y {_fecha_final}')
-        encabezados = ['Clave_paciente', '1er_Apellido', '2do_Apellido', 'Nombre', 'Fecha_nacimiento', 
-                       'Sexo', 'Folio_cita', 'Fecha_cita', 'Turno', 'Hora_llegada', 
-                       'Peso_kg', 'Estatura_cm',  'Presion_arterial', 'Edad']
+        encabezados = ['Clave_paciente', '1er_Apellido', '2do_Apellido', 'Nombre', 'Fecha_nacimiento', 'Sexo', 'Folio_cita', 'Fecha_cita', \
+                       'Turno', 'Hora_llegada', 'Peso_kg', 'Estatura_cm',  'Presion_arterial', 'Edad']
         print(tabulate(citas_encontradas_tab, headers = encabezados, tablefmt="rounded_grid", rowalign="center"))
         
         exportar('reporte_citas_periodo', df_citas_encontradas)
@@ -954,16 +930,13 @@ def menu_periodo_paciente():
         try:
           with sqlite3.connect('Consultorio.db',
                                 detect_types = sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as conn:
-            conn.execute("PRAGMA foreign_keys=1")
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM Pacientes WHERE id_paciente = ?", (clave_paciente,))
             paciente_buscado = cursor.fetchall()
             
-            cursor.execute("SELECT id_cita, fecha_cita, turno_cita, hora_llegada, peso_kg, estatura_cm, presion_arterial \
-                            FROM Citas WHERE id_paciente = ?", (clave_paciente,))
+            cursor.execute("SELECT id_cita, fecha_cita, turno_cita, hora_llegada, peso_kg, estatura_cm, presion_arterial FROM Citas WHERE id_paciente = ?", (clave_paciente,))
             citas_encontradas = cursor.fetchall()
-            df_citas_encontradas = pd.read_sql("SELECT id_cita, fecha_cita, turno_cita, hora_llegada, \
-                                               peso_kg, estatura_cm, presion_arterial \
+            df_citas_encontradas = pd.read_sql("SELECT id_cita, fecha_cita, turno_cita, hora_llegada, peso_kg, estatura_cm, presion_arterial \
                                                FROM Citas WHERE id_paciente = ?", conn, params=(clave_paciente,))
 
         except sqlite3.Error as e:
@@ -1024,7 +997,6 @@ def menu_listado_busqueda_clave_apellidos():
     try:
       with sqlite3.connect('Consultorio.db',
                             detect_types = sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as conn:
-        conn.execute("PRAGMA foreign_keys=1")
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM Pacientes")
         pacientes = cursor.fetchall()  
@@ -1078,7 +1050,6 @@ def menu_listado_busqueda_clave_apellidos():
         try:
           with sqlite3.connect('Consultorio.db',
                                 detect_types = sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as conn:
-            conn.execute("PRAGMA foreign_keys=1")
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM Pacientes WHERE id_paciente = ?", (clave_paciente,))
             paciente_buscado = cursor.fetchall()     
@@ -1110,12 +1081,9 @@ def menu_listado_busqueda_clave_apellidos():
         try:
           with sqlite3.connect('Consultorio.db',
                                 detect_types = sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as conn:
-            conn.execute("PRAGMA foreign_keys=1")
             cursor = conn.cursor()
-            cursor.execute("SELECT id_cita, fecha_cita, turno_cita, hora_llegada, peso_kg, estatura_cm, \
-                           presion_arterial, diagnostico, fecha_nacimiento \
-                           FROM Citas INNER JOIN Pacientes ON Citas.id_Paciente = Pacientes.id_Paciente \
-                           WHERE Citas.id_paciente = ?", (clave_paciente,))
+            cursor.execute("SELECT id_cita, fecha_cita, turno_cita, hora_llegada, peso_kg, estatura_cm, presion_arterial, diagnostico, fecha_nacimiento \
+                           FROM Citas INNER JOIN Pacientes ON Citas.id_Paciente = Pacientes.id_Paciente WHERE Citas.id_paciente = ?", (clave_paciente,))
             expediente = cursor.fetchall()     
         except sqlite3.Error as e:
           print(e)
@@ -1131,17 +1099,14 @@ def menu_listado_busqueda_clave_apellidos():
 
         expediente_tab = []
 
-        for folio_cita, fecha_cita, turno, hora_llegada, peso_kg, estatura_cm, \
-          presion_arterial, diagnostico, fecha_nacimiento in expediente:
+        for folio_cita, fecha_cita, turno, hora_llegada, peso_kg, estatura_cm, presion_arterial, diagnostico, fecha_nacimiento in expediente:
           edad = fecha_cita.year - fecha_nacimiento.year
           if (fecha_nacimiento.month, fecha_nacimiento.day) > (fecha_cita.month, fecha_cita.day):
             edad = edad - 1
           fecha_cita = fecha_cita.date().strftime('%m/%d/%Y')
-          expediente_tab.append([folio_cita, fecha_cita, turno, hora_llegada, peso_kg, estatura_cm, 
-                                 presion_arterial, diagnostico, edad])
+          expediente_tab.append([folio_cita, fecha_cita, turno, hora_llegada, peso_kg, estatura_cm, presion_arterial, diagnostico, edad])
 
-        encabezados = ('Folio_cita', 'Fecha_cita', 'Turno', 'Hora_llegada', 'Peso_kg', 
-                       'Estatura_cm', 'Presion_arterial', 'Diagnóstico', 'Edad')
+        encabezados = ('Folio_cita', 'Fecha_cita', 'Turno', 'Hora_llegada', 'Peso_kg', 'Estatura_cm', 'Presion_arterial', 'Diagnóstico', 'Edad')
         print(tabulate((expediente_tab), headers = encabezados, tablefmt="rounded_grid", rowalign="center"))
 
         break
@@ -1201,11 +1166,9 @@ def menu_listado_busqueda_clave_apellidos():
         try:
           with sqlite3.connect('Consultorio.db',
                                 detect_types = sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as conn:
-            conn.execute("PRAGMA foreign_keys=1")
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM Pacientes \
-                            WHERE primer_apellido = ? \
-                            AND segundo_apellido = ? AND nombre = ?;", (primer_apellido_u, segundo_apellido_u, nombre_u))
+                            WHERE primer_apellido = ? AND segundo_apellido = ? AND nombre = ?;", (primer_apellido_u, segundo_apellido_u, nombre_u))
             paciente_buscado = cursor.fetchall()     
             df_paciente_buscado = pd.read_sql("SELECT * FROM Pacientes \
                                               WHERE primer_apellido = ? AND segundo_apellido = ? \
@@ -1243,8 +1206,7 @@ def menu_listado_busqueda_clave_apellidos():
                                 detect_types = sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as conn:
             conn.execute("PRAGMA foreign_keys=1")
             cursor = conn.cursor()
-            cursor.execute("SELECT id_cita, fecha_cita, turno_cita, hora_llegada, peso_kg, estatura_cm, \
-                            presion_arterial, diagnostico, fecha_nacimiento \
+            cursor.execute("SELECT id_cita, fecha_cita, turno_cita, hora_llegada, peso_kg, estatura_cm, presion_arterial, diagnostico, fecha_nacimiento \
                             FROM Citas INNER JOIN Pacientes ON Citas.id_paciente = Pacientes.id_paciente\
                             WHERE Citas.id_paciente = ? AND peso_kg != 'NA'", (clave_paciente,))
             expediente = cursor.fetchall()
@@ -1362,11 +1324,7 @@ def estadisticos_demograficos():
 
           peso_estatura_presion_fecha_lista.append([peso, estatura, sistolica, diastolica, edad])
         
-        df_peso_estatura_presion_fecha = pd.DataFrame(peso_estatura_presion_fecha_lista, columns = ['Peso', 
-                                                                                                    'Estatura', 
-                                                                                                    'Sistolica', 
-                                                                                                    'Diastolica', 
-                                                                                                    'Edad'])
+        df_peso_estatura_presion_fecha = pd.DataFrame(peso_estatura_presion_fecha_lista, columns = ['Peso', 'Estatura', 'Sistolica', 'Diastolica', 'Edad'])
 
         filtro_edad_inicial = df_peso_estatura_presion_fecha["Edad"] >= edad_inicial 
         filtro_edad_final = df_peso_estatura_presion_fecha["Edad"] <= edad_final
@@ -1377,11 +1335,9 @@ def estadisticos_demograficos():
           print('\nNo existen datos para analizar con ese rango de edad.')
           break
         
-        peso_estatura_presion_edad_medidas = datos_filtrados[['Peso', 'Estatura', 'Sistolica', 'Diastolica']]\
-                                            .describe().loc[['count', 'min', 'max', 'mean', '50%', 'std']]
-        peso_estatura_presion_edad_medidas = peso_estatura_presion_edad_medidas\
-                                            .rename(index={'count': 'Conteo', 'min': 'Mínimo', 'max': 'Máximo', 
-                                            'mean': 'Media', '50%': 'Mediana', 'std': 'Desviación estándar'})
+        peso_estatura_presion_edad_medidas = datos_filtrados[['Peso', 'Estatura', 'Sistolica', 'Diastolica']].describe().loc[['count', 'min', 'max', 'mean', '50%', 'std']]
+        peso_estatura_presion_edad_medidas = peso_estatura_presion_edad_medidas.rename(index={'count': 'Conteo', 'min': 'Mínimo', 'max': 'Máximo', 
+                                                                                              'mean': 'Media', '50%': 'Mediana', 'std': 'Desviación estándar'})
         peso_estatura_presion_edad_medidas = peso_estatura_presion_edad_medidas.round(2)
         
         print(f'\nDatos demográficos para el rango de edad de {edad_inicial} a {edad_final}\n')
@@ -1448,12 +1404,9 @@ def estadisticos_demograficos():
           
         df = pd.DataFrame(peso_estatura_presion_lista, columns=['Peso', 'Estatura', 'Sistolica', 'Diastolica'])
 
-        peso_estatura_presion_medidas = df[['Peso', 'Estatura', 'Sistolica', 'Diastolica']]\
-                                        .describe().loc[['count', 'min', 'max', 'mean', '50%', 'std']]
-        peso_estatura_presion_medidas = peso_estatura_presion_medidas\
-                                        .rename(index={'count': 'Conteo', 'min': 'Mínimo', 'max': 'Máximo', 
-                                                        'mean': 'Media', '50%': 'Mediana', 
-                                                        'std': 'Desviación estándar'})
+        peso_estatura_presion_medidas = df[['Peso', 'Estatura', 'Sistolica', 'Diastolica']].describe().loc[['count', 'min', 'max', 'mean', '50%', 'std']]
+        peso_estatura_presion_medidas = peso_estatura_presion_medidas.rename(index={'count': 'Conteo', 'min': 'Mínimo', 'max': 'Máximo', 
+                                                                                    'mean': 'Media', '50%': 'Mediana', 'std': 'Desviación estándar'})
         peso_estatura_presion_medidas = peso_estatura_presion_medidas.round(2)
         
         if sexo == 'H':
@@ -1572,9 +1525,7 @@ def estadisticos_demograficos():
 
           peso_estatura_presion_fecha_lista.append([peso, estatura, sistolica, diastolica, edad])
         
-        df_peso_estatura_presion_fecha = pd.DataFrame(peso_estatura_presion_fecha_lista, columns = ['Peso', 'Estatura', 
-                                                                                                    'Sistolica', 'Diastolica', 
-                                                                                                    'Edad'])
+        df_peso_estatura_presion_fecha = pd.DataFrame(peso_estatura_presion_fecha_lista, columns = ['Peso', 'Estatura', 'Sistolica', 'Diastolica', 'edad'])
 
         filtro_edad_inicial = df_peso_estatura_presion_fecha["edad"] >= edad_inicial 
         filtro_edad_final = df_peso_estatura_presion_fecha["edad"] <= edad_final
@@ -1596,11 +1547,9 @@ def estadisticos_demograficos():
           
         df = pd.DataFrame(datos_filtrados, columns=['Peso', 'Estatura', 'Sistolica', 'Diastolica'])
 
-        peso_estatura_presion_edad_sexo_medidas = datos_filtrados[['Peso', 'Estatura', 'Sistolica', 'Diastolica']]\
-                                                  .describe().loc[['count', 'min', 'max', 'mean', '50%', 'std']]
-        peso_estatura_presion_edad_sexo_medidas = peso_estatura_presion_edad_sexo_medidas\
-        .rename(index={'count': 'Conteo', 'min': 'Mínimo', 'max': 'Máximo', 'mean': 'Media', '50%': 'Mediana', 'std': 'Desviación estándar'})
-        
+        peso_estatura_presion_edad_sexo_medidas = datos_filtrados[['Peso', 'Estatura', 'Sistolica', 'Diastolica']].describe().loc[['count', 'min', 'max', 'mean', '50%', 'std']]
+        peso_estatura_presion_edad_sexo_medidas = peso_estatura_presion_edad_sexo_medidas.rename(index={'count': 'Conteo', 'min': 'Mínimo', 'max': 'Máximo', 
+                                                                                                        'mean': 'Media', '50%': 'Mediana', 'std': 'Desviación estándar'})
         peso_estatura_presion_edad_sexo_medidas = peso_estatura_presion_edad_sexo_medidas.round(2)
         
         print(f'\nDatos demográficos para el rango de edad de {edad_inicial} a {edad_final} y sexo: {sexo}\n')
@@ -1619,7 +1568,6 @@ y cargar los datos previos en caso de existir, además, muestra el primer menú'
 while True:
   try:
     with sqlite3.connect('Consultorio.db') as conn:
-      conn.execute("PRAGMA foreign_keys=1")
       cursor = conn.cursor()
       crear_tabla_pacientes()
       cursor.execute('SELECT * FROM Pacientes')
