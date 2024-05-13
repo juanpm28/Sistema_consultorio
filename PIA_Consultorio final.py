@@ -162,6 +162,7 @@ def registro_pacientes():
     
     try:
       with sqlite3.connect('Consultorio.db') as conn:
+        conn.execute("PRAGMA foreign_keys=1")
         cursor = conn.cursor()
         cursor.execute('INSERT INTO Pacientes (primer_apellido, segundo_apellido, nombre, fecha_nacimiento, sexo) \
                         VALUES(?,?,?,?,?)', paciente)
@@ -185,6 +186,7 @@ def citas_crear_realizar_cancelar_menu():
     
     try:
       with sqlite3.connect('Consultorio.db') as conn:
+        conn.execute("PRAGMA foreign_keys=1")
         cursor = conn.cursor()
         cursor.execute('SELECT * FROM Citas')
         citas = cursor.fetchall()
@@ -218,6 +220,7 @@ def crear_cita():
   while True:
     try:
       with sqlite3.connect('Consultorio.db') as conn:
+        conn.execute("PRAGMA foreign_keys=1")
         cursor = conn.cursor()
         cursor.execute('SELECT id_paciente, primer_apellido, segundo_apellido, nombre \
                         FROM Pacientes \
@@ -250,6 +253,7 @@ def crear_cita():
 
     try:
       with sqlite3.connect('Consultorio.db') as conn:
+        conn.execute("PRAGMA foreign_keys=1")
         cursor = conn.cursor()
         cursor.execute('SELECT id_paciente FROM Pacientes WHERE id_paciente = ?', (clave_paciente,))
         id_paciente_encontrado = cursor.fetchone() 
@@ -338,6 +342,7 @@ def crear_cita():
     
     try:
       with sqlite3.connect('Consultorio.db') as conn:
+        conn.execute("PRAGMA foreign_keys=1")
         cursor = conn.cursor()
         cursor.execute('INSERT INTO Citas (id_paciente, fecha_cita, turno_cita, hora_llegada, peso_kg, estatura_cm, presion_arterial, diagnostico) \
                         VALUES(?,?,?,?,?,?,?,?)', cita)
@@ -534,6 +539,7 @@ def cancelar_cita_menu():
 
     try:
       with sqlite3.connect('Consultorio.db') as conn:
+        conn.execute("PRAGMA foreign_keys=1")
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM Citas WHERE peso_kg = 'NA';")
         citas = cursor.fetchall()
@@ -581,6 +587,7 @@ def eliminar_por_fecha():
       try:
         with sqlite3.connect('Consultorio.db', 
                               detect_types = sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as conn:
+          conn.execute("PRAGMA foreign_keys=1")
           cursor = conn.cursor()
           cursor.execute("SELECT C.id_cita, P.nombre, P.primer_apellido, P.segundo_apellido, C.turno_cita \
                           FROM Citas C \
@@ -629,6 +636,7 @@ def eliminar_por_fecha():
 
         try:
           with sqlite3.connect('Consultorio.db') as conn:
+            conn.execute("PRAGMA foreign_keys=1")
             cursor = conn.cursor()
             cursor.execute('DELETE FROM Citas WHERE id_cita = ?;', (folio_a_eliminar,))
             print(f'Se ha eliminado la cita {folio_a_eliminar}')
@@ -647,6 +655,7 @@ def eliminar_por_fecha():
 def cancelacion_por_paciente():
       try:
         with sqlite3.connect('Consultorio.db') as conn:
+          conn.execute("PRAGMA foreign_keys=1")
           cursor = conn.cursor()
           cursor.execute("SELECT DISTINCT(P.id_paciente), P.nombre, P.primer_apellido, P.segundo_apellido \
                           FROM Citas C \
@@ -744,6 +753,7 @@ def cancelacion_por_paciente():
         if op_confirmacion == "S":  
           try:
             with sqlite3.connect('Consultorio.db') as conn:
+              conn.execute("PRAGMA foreign_keys=1")
               cursor = conn.cursor()
               cursor.execute('DELETE FROM Citas WHERE id_cita = ?;', (folio_a_eliminar,))
               print(f'Se ha eliminado la cita {folio_a_eliminar}')
@@ -763,6 +773,7 @@ redirige a las funciones que sean necesarias '''
 def consultas_reportes():
   try:
     with sqlite3.connect('Consultorio.db') as conn:
+      conn.execute("PRAGMA foreign_keys=1")
       cursor = conn.cursor()
       cursor.execute('SELECT * FROM Pacientes')
       pacientes = cursor.fetchall()
@@ -930,6 +941,7 @@ def menu_periodo_paciente():
         try:
           with sqlite3.connect('Consultorio.db',
                                 detect_types = sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as conn:
+            conn.execute("PRAGMA foreign_keys=1")
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM Pacientes WHERE id_paciente = ?", (clave_paciente,))
             paciente_buscado = cursor.fetchall()
@@ -997,6 +1009,7 @@ def menu_listado_busqueda_clave_apellidos():
     try:
       with sqlite3.connect('Consultorio.db',
                             detect_types = sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as conn:
+        conn.execute("PRAGMA foreign_keys=1")
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM Pacientes")
         pacientes = cursor.fetchall()  
@@ -1050,6 +1063,7 @@ def menu_listado_busqueda_clave_apellidos():
         try:
           with sqlite3.connect('Consultorio.db',
                                 detect_types = sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as conn:
+            conn.execute("PRAGMA foreign_keys=1")
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM Pacientes WHERE id_paciente = ?", (clave_paciente,))
             paciente_buscado = cursor.fetchall()     
@@ -1081,6 +1095,7 @@ def menu_listado_busqueda_clave_apellidos():
         try:
           with sqlite3.connect('Consultorio.db',
                                 detect_types = sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as conn:
+            conn.execute("PRAGMA foreign_keys=1")
             cursor = conn.cursor()
             cursor.execute("SELECT id_cita, fecha_cita, turno_cita, hora_llegada, peso_kg, estatura_cm, presion_arterial, diagnostico, fecha_nacimiento \
                            FROM Citas INNER JOIN Pacientes ON Citas.id_Paciente = Pacientes.id_Paciente WHERE Citas.id_paciente = ?", (clave_paciente,))
@@ -1166,6 +1181,7 @@ def menu_listado_busqueda_clave_apellidos():
         try:
           with sqlite3.connect('Consultorio.db',
                                 detect_types = sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as conn:
+            conn.execute("PRAGMA foreign_keys=1")
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM Pacientes \
                             WHERE primer_apellido = ? AND segundo_apellido = ? AND nombre = ?;", (primer_apellido_u, segundo_apellido_u, nombre_u))
@@ -1568,6 +1584,7 @@ y cargar los datos previos en caso de existir, además, muestra el primer menú'
 while True:
   try:
     with sqlite3.connect('Consultorio.db') as conn:
+      conn.execute("PRAGMA foreign_keys=1")
       cursor = conn.cursor()
       crear_tabla_pacientes()
       cursor.execute('SELECT * FROM Pacientes')
