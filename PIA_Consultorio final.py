@@ -16,7 +16,7 @@ menu_principal = {
     'X':'Salir del sistema'
 }
 
-''' La función exportar sirve para exportar los reportes generados a excel o csv  '''
+''' La función exportar sirve para exportar los reportes generados a excel o csv '''
 def exportar(nombre, datos):
   op_export = mostrar_menu({'1':'Excel', '2':'CSV', 'X':'No exportar'}, 
                            '¿Deseas exportar la información mostrada a un archivo de Excel o CSV?')
